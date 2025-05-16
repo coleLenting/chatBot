@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cole Lenting - Portfolio Chatbot</title>
+    <link rel="icon" href="bot.gif" type="image/x-icon">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="profile-pic">CL</div>
+            <div>
+                <h3>Cole Lenting</h3>
+                <small>Portfolio Assistant</small>
+            </div>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="typing-indicator" id="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your message here...">
+            <button id="send-button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script src="chatbot-data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
