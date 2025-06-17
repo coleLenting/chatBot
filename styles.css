@@ -379,3 +379,87 @@ body {
     font-size: 16px;
     font-weight: bold;
 }
+
+.cv-download-container {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.cv-option {
+    flex: 1;
+    min-width: 200px;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    text-align: center;
+    background: #f9f9f9;
+}
+
+.cv-option h4 {
+    margin: 0 0 8px 0;
+    color: #333;
+}
+
+.cv-option p {
+    margin: 0 0 15px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.cv-download-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.pdf-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.pdf-btn:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+}
+
+.word-btn {
+    background: #007bff;
+    color: white;
+}
+
+.word-btn:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+}
+
+.download-icon {
+    margin-right: 8px;
+}
+
+.cv-preview-note {
+    margin-top: 20px;
+    padding: 10px;
+    background: #e8f4fd;
+    border-left: 4px solid #007bff;
+    border-radius: 4px;
+}
+
+.cv-preview-note p {
+    margin: 0;
+    color: #0056b3;
+    font-size: 14px;
+}
+
+.resume-redirect {
+    text-align: center;
+    padding: 20px;
+    background: #f0f8ff;
+    border-radius: 8px;
+    margin: 10px 0;
+}

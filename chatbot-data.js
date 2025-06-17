@@ -1,11 +1,12 @@
-// Enhanced chat data structure
+// Enhanced chat data structure with CV download functionality
 const chatbotData = {
     welcome: {
         message: "Hi there! 👋 I'm Cole Lenting's portfolio assistant. How can I help you learn more about Cole?",
         options: [
             { text: "Tell me about Cole", nextState: "about" },
             { text: "What's Cole doing now?", nextState: "current_status" },
-            { text: "View his work", nextState: "experience" }
+            { text: "View his work", nextState: "experience" },
+            { text: "Download his CV", nextState: "cv" }
         ]
     },
     greeting: {
@@ -13,7 +14,8 @@ const chatbotData = {
         options: [
             { text: "Tell me about Cole", nextState: "about" },
             { text: "What's he working on?", nextState: "current_status" },
-            { text: "See his skills", nextState: "skills" }
+            { text: "See his skills", nextState: "skills" },
+            { text: "Get his CV", nextState: "cv" }
         ]
     },
     current_status: {
@@ -21,6 +23,7 @@ const chatbotData = {
         options: [
             { text: "Contact Cole", nextState: "contact" },
             { text: "View his experience", nextState: "experience" },
+            { text: "Download CV", nextState: "cv" },
             { text: "Back to menu", nextState: "welcome" }
         ]
     },
@@ -29,6 +32,7 @@ const chatbotData = {
         options: [
             { text: "What's his background?", nextState: "education" },
             { text: "See his projects", nextState: "experience" },
+            { text: "Download his CV", nextState: "cv" },
             { text: "Contact information", nextState: "contact" }
         ]
     },
@@ -37,6 +41,7 @@ const chatbotData = {
         options: [
             { text: "See work experience", nextState: "experience" },
             { text: "Technical skills", nextState: "skills" },
+            { text: "Download full CV", nextState: "cv" },
             { text: "Back to menu", nextState: "welcome" }
         ]
     },
@@ -44,6 +49,7 @@ const chatbotData = {
         message: "Cole's professional experience:\n\n💼 **Work Integrated Learning** - BIIC | Pillar 5 Group (Jul-Sep 2024)\n   • Integrated academic studies with practical work\n   • Developed academic, social, and technological competencies\n\n🌐 **Website Developer** - Kamikaze Innovations (Feb-Jul 2024)\n   • Designed and developed custom websites\n   • Created comprehensive design systems\n   • Built responsive sites from scratch\n   • Delivered full project documentation",
         options: [
             { text: "View technical skills", nextState: "skills" },
+            { text: "Get complete CV", nextState: "cv" },
             { text: "Get contact info", nextState: "contact" },
             { text: "What's he doing now?", nextState: "current_status" }
         ]
@@ -77,6 +83,7 @@ const chatbotData = {
         `,
         options: [
             { text: "See his projects", nextState: "experience" },
+            { text: "Download detailed CV", nextState: "cv" },
             { text: "How to reach him?", nextState: "contact" },
             { text: "Back to menu", nextState: "welcome" }
         ]
@@ -84,8 +91,47 @@ const chatbotData = {
     contact: {
         message: "Ready to connect with Cole? Here's how:\n\n📧 **Email:** colelenting7@gmail.com\n📱 **Phone:** 081 348 9356\n📍 **Location:** Cape Town, SA\n\n💡 Cole is always open to discussing new opportunities, collaborations, and exciting projects!",
         options: [
+            { text: "Download his CV", nextState: "cv" },
             { text: "What's he working on?", nextState: "current_status" },
             { text: "View his skills", nextState: "skills" },
+            { text: "Back to menu", nextState: "welcome" }
+        ]
+    },
+    cv: {
+        message: "📄 **Cole Lenting's CV/Resume**\n\nGet Cole's complete professional profile including:\n• Full work experience details\n• Complete educational background\n• Comprehensive skills list\n• Project portfolio\n• Contact information\n\nChoose your preferred format:",
+        customHTML: `
+            <div class="cv-download-container">
+                <div class="cv-option">
+                    <h4>📄 PDF Format</h4>
+                    <p>Perfect for printing and professional sharing</p>
+                    <a href="./assets/Cole_Lenting_CV.pdf" download="Cole_Lenting_CV.pdf" class="cv-download-btn pdf-btn">
+                        <span class="download-icon">⬇️</span>
+                        Download PDF CV
+                    </a>
+                </div>
+            </div>
+            <div class="cv-preview-note">
+                <p><strong>💡 Note:</strong> Cole's CV is regularly updated with his latest projects and achievements. Last updated: ${getLastUpdated()}</p>
+            </div>
+        `,
+        options: [
+            { text: "Contact Cole directly", nextState: "contact" },
+            { text: "Learn more about him", nextState: "about" },
+            { text: "See current projects", nextState: "current_status" },
+            { text: "Back to menu", nextState: "welcome" }
+        ]
+    },
+    resume: {
+        message: "📋 **Cole's Professional Resume**\n\nLooking for Cole's resume? You're in the right place! His comprehensive CV includes all his professional experience, education, and technical skills.",
+        customHTML: `
+            <div class="resume-redirect">
+                <p>🔄 <em>Redirecting you to download options...</em></p>
+            </div>
+        `,
+        options: [
+            { text: "Download CV/Resume", nextState: "cv" },
+            { text: "View skills summary", nextState: "skills" },
+            { text: "Contact information", nextState: "contact" },
             { text: "Back to menu", nextState: "welcome" }
         ]
     },
@@ -93,6 +139,7 @@ const chatbotData = {
         message: getAvailabilityMessage(),
         options: [
             { text: "Contact Cole", nextState: "contact" },
+            { text: "Download his CV", nextState: "cv" },
             { text: "Learn about his work", nextState: "experience" },
             { text: "Back to menu", nextState: "welcome" }
         ]
@@ -101,6 +148,7 @@ const chatbotData = {
         message: "Cole has worked on various exciting projects:\n\n🚀 **Custom Website Development** at Kamikaze Innovations\n   • Full-stack web solutions\n   • Responsive design implementation\n   • Brand identity integration\n\n💼 **Professional Development** at BIIC | Pillar 5 Group\n   • Real-world application of academic knowledge\n   • Industry-standard practices\n\nWant to see more of his technical capabilities?",
         options: [
             { text: "View technical skills", nextState: "skills" },
+            { text: "Download full CV", nextState: "cv" },
             { text: "Contact for projects", nextState: "contact" },
             { text: "Back to menu", nextState: "welcome" }
         ]
@@ -108,6 +156,7 @@ const chatbotData = {
     thanks: {
         message: "You're very welcome! 😊 I'm glad I could help you learn more about Cole. Is there anything else you'd like to know about his background, skills, or current projects?",
         options: [
+            { text: "Download his CV", nextState: "cv" },
             { text: "Contact information", nextState: "contact" },
             { text: "Current availability", nextState: "current_status" },
             { text: "Back to menu", nextState: "welcome" }
@@ -117,6 +166,7 @@ const chatbotData = {
         message: "I'm not quite sure about that! 🤔 Let me help you explore what I know about Cole. What interests you most?",
         options: [
             { text: "About Cole", nextState: "about" },
+            { text: "Download his CV", nextState: "cv" },
             { text: "His current work", nextState: "current_status" },
             { text: "Contact him", nextState: "contact" }
         ]
@@ -149,7 +199,19 @@ function getAvailabilityMessage() {
     }
 }
 
-// Enhanced NLP keywords mapping
+// Function to get last updated date for CV
+function getLastUpdated() {
+    const now = new Date();
+    const options = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        timeZone: 'Africa/Johannesburg'
+    };
+    return now.toLocaleDateString('en-US', options);
+}
+
+// Enhanced NLP keywords mapping with CV/Resume keywords
 const keywordMappings = {
     greeting: ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "greetings", "sup", "what's up", "howdy"],
     about: ["about", "who", "background", "portfolio", "yourself", "bio", "tell me", "introduce", "profile", "person"],
@@ -160,5 +222,9 @@ const keywordMappings = {
     current_status: ["now", "currently", "doing", "working", "today", "present", "status", "available", "busy", "free", "time", "schedule", "capaciti"],
     availability: ["available", "free", "busy", "when", "time", "schedule", "meet", "talk", "call", "availability", "open"],
     projects: ["project", "work", "portfolio", "website", "development", "build", "created", "made", "examples", "showcase", "demo"],
-    thanks: ["thank", "thanks", "appreciate", "grateful", "cheers", "awesome", "great", "perfect", "excellent", "wonderful"]
+    thanks: ["thank", "thanks", "appreciate", "grateful", "cheers", "awesome", "great", "perfect", "excellent", "wonderful"],
+    cv: ["cv", "resume", "curriculum vitae", "download", "pdf", "document", "file", "professional profile", "qualifications", "credentials", "employment history"],
+    resume: ["resume", "cv", "curriculum", "vitae", "download", "get", "show", "view", "professional", "document"]
 };
+
+
