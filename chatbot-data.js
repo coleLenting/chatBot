@@ -104,7 +104,7 @@ const chatbotData = {
                 <div class="cv-option">
                     <h4>📄 PDF Format</h4>
                     <p>Perfect for printing and professional sharing</p>
-                    <a href="./assets/Cole_Lenting_CV.pdf" download="Cole_Lenting_CV.pdf" class="cv-download-btn pdf-btn">
+                    <a href="./assets/coleLenting-CV.pdf" download="Cole_Lenting_CV.pdf" class="cv-download-btn pdf-btn">
                         <span class="download-icon">⬇️</span>
                         Download PDF CV
                     </a>
