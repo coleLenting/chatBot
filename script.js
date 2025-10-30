@@ -156,8 +156,16 @@ function displayBotMessage(message) {
     messageElement.innerHTML = formatMessage(message);
 
     makeLinksClickable(messageElement);
+    messageContainer.appendChild(messageElement);
     
-    // Add quick action buttons
+    // Add quick action buttons below every message
+    addQuickActionButtons(messageContainer);
+    
+    messagesContainer.appendChild(messageContainer);
+    scrollToBottom();
+}
+
+function addQuickActionButtons(container) {
     const quickActionsContainer = document.createElement('div');
     quickActionsContainer.classList.add('quick-actions');
     
@@ -173,30 +181,47 @@ function displayBotMessage(message) {
         button.classList.add('quick-action-btn');
         button.textContent = action.text;
         button.addEventListener('click', () => {
-            handleQuickAction(action.action);
+            const userMessage = action.text;
+            displayUserMessage(userMessage);
+            addToHistory('user', userMessage);
+            handleBotResponse(action.action);
         });
         quickActionsContainer.appendChild(button);
     });
 
-    messageContainer.appendChild(messageElement);
-    messageContainer.appendChild(quickActionsContainer);
-    messagesContainer.appendChild(messageContainer);
-    scrollToBottom();
+    container.appendChild(quickActionsContainer);
 }
 
-// Add this new function to handle quick actions
-async function handleQuickAction(action) {
+async function handleBotResponse(action) {
     if (isProcessing) return;
+    
+    isProcessing = true;
+    sendButton.disabled = true;
+    showTypingIndicator();
 
-    const actionMessages = {
-        about: "Tell me about Cole",
-        current_status: "What is Cole currently doing?",
-        experience: "Show me Cole's work experience",
-        cv: "I'd like to see Cole's CV"
-    };
+    try {
+        let response;
+        if (window.chatbotData && window.chatbotData[action]) {
+            // Use predefined response from chatbot-data.js
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 600));
+            response = window.chatbotData[action].message;
+        } else {
+            // Fallback to API if no predefined response exists
+            response = await callGeminiAPI(action);
+        }
 
-    const message = actionMessages[action] || action;
-    handleUserInput(message);
+        hideTypingIndicator();
+        displayBotMessage(response);
+        addToHistory('assistant', response);
+
+    } catch (error) {
+        console.error('Error:', error);
+        hideTypingIndicator();
+        displayBotMessage("I apologize, but I'm having trouble responding right now. Please try again.");
+    } finally {
+        isProcessing = false;
+        sendButton.disabled = false;
+    }
 }
 
 function formatMessage(text) {
