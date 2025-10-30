@@ -61,8 +61,8 @@ Here's Cole's contact information in the meantime:
 
 Quick actions:
 • Try asking again
-• Download CV (/assets/coleLenting-CV.pdf)
-• Visit portfolio (https://www.colelenting.com/)`;
+• Download CV ("./assets/coleLenting-CV.pdf")
+• Visit portfolio (https://colelenting.vercel.app/)`;
 
         displayBotMessage(errorMessage);
     } finally {
