@@ -589,23 +589,23 @@ body {
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
     body {
-        background: #121212;
-        color: #e0e0e0;
+        background: #121212 !important;
+        color: #e0e0e0 !important;
     }
     
     .chat-container {
-        background: #1e1e1e;
+        background: #1e1e1e !important;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
     }
     
     .chat-header {
-        background: #252525;
-        color: #f0f0f0;
+        background: #252525 !important;
+        color: #f0f0f0 !important;
     }
     
     .chat-messages {
-        background: #181818;
-        color: #e0e0e0;
+        background: #181818 !important;
+        color: #e0e0e0 !important; 
     }
     
     .message {
@@ -617,8 +617,8 @@ body {
     }
     
     .bot-message {
-        background: #2c2c2c;
-        border-color: #444;
+        background: #2c2c2c !important;
+        border-color: #444 !important;
     }
     
     .option-button {
@@ -626,24 +626,46 @@ body {
     }
     
     #user-input {
-        background: #2c2c2c;
-        border-color: #444;
-        color: #f0f0f0;
+        background: #2c2c2c !important;
+        border-color: #444 !important;
+        color: #f0f0f0 !important;
     }
     
     #user-input::placeholder {
-        color: #888;
+        color: #888 !important;
     }
 
+    .typing-indicator {
+    display: none;
+    align-self: flex-start;
+    background: #181818 !important;
+    padding: 16px 20px;
+    border-radius: 18px;
+    border: 1px solid #444 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    margin-bottom: 10px;
+}
+
+.typing-indicator span {
+    height: 8px;
+    width: 8px;
+    background: #007bff !important;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+    animation: typing 1.4s infinite ease-in-out;
+}
+
+
     .chat-input {
-        background: #1e1e1e;
-        border-top: 1px solid #444;
+        background: #1e1e1e !important;
+        border-top: 1px solid #444 !important;
     }
 
     #send-button {
-        background: #333;
+        background: #333 !important;
         color: white;
-        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3) !important;
     }
 
     .skill-item{

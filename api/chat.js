@@ -28,9 +28,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    // First try to match with static data for exact matches
+    // First try to match with static data
     const staticResponse = getStaticResponse(message);
-    if (staticResponse && isExactMatch(message)) {
+    if (staticResponse) {
       console.log('✅ Using static response from chatbot-data.js');
       return res.status(200).json({
         response: staticResponse,
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     
     if (!GEMINI_API_KEY) {
-      console.log('⚠️ No API key, falling back to static data');
+      console.log('❌ No API key, falling back to static data');
       return res.status(200).json({
         response: getFallbackResponse(message),
         source: 'fallback',
@@ -51,8 +51,39 @@ export default async function handler(req, res) {
       });
     }
 
-    // Build comprehensive system prompt with actual data
-    const systemPrompt = buildSystemPrompt();
+    const systemPrompt = `You are Cole Lenting's portfolio assistant. ONLY respond with information from these exact sources:
+
+STRICT DATA SOURCES:
+1. Cole's CV/Resume details:
+   - Education: ICT Diploma (Multimedia) from CPUT
+   - Work: Kamikaze Innovations, BIIC | Pillar 5 Group
+   - Skills: Frontend, Backend, Design tools
+
+2. Portfolio (colelenting.vercel.app):
+   - Projects
+   - Work samples
+   - Technical capabilities
+
+3. GitHub (github.com/coleLenting):
+   - Repositories
+   - Contributions
+   - Code examples
+
+CRITICAL RULES:
+- NEVER generate, assume, or create information
+- ONLY use facts from the above sources
+- If information isn't in these sources, respond: "I can only share information directly from Cole's CV, portfolio, and GitHub."
+- Keep responses under 200 words
+- Be friendly but factual
+- Use 1-2 emojis maximum
+- Don't list contact methods in responses
+- Don't mention "Quick actions"
+
+RESPONSE FORMAT:
+- Short, direct answers
+- No speculative content
+- No generated examples
+- No assumptions about availability`;
 
     // Build conversation for Gemini
     const contents = [];
@@ -75,7 +106,7 @@ export default async function handler(req, res) {
 
     // Call Gemini API with timeout
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -88,10 +119,10 @@ export default async function handler(req, res) {
             parts: [{ text: systemPrompt }]
           },
           generationConfig: {
-            temperature: 0.4,  // Lower temperature for more factual responses
-            topK: 20,
-            topP: 0.85,
-            maxOutputTokens: 500
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 800
           }
         }),
         signal: controller.signal
@@ -103,21 +134,9 @@ export default async function handler(req, res) {
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
       console.error('❌ Gemini API error:', geminiResponse.status, errorText);
-      
-      // Check for rate limit
-      if (geminiResponse.status === 429) {
-        console.log('🔄 Rate limit reached, using fallback');
-        return res.status(200).json({
-          response: getFallbackResponse(message),
-          source: 'rate_limit_fallback',
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      return res.status(200).json({
-        response: getFallbackResponse(message),
-        source: 'error_fallback',
-        timestamp: new Date().toISOString()
+      return res.status(500).json({ 
+        error: 'AI service error',
+        details: errorText 
       });
     }
 
@@ -127,21 +146,18 @@ export default async function handler(req, res) {
     // Validate response
     if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
       console.error('❌ Invalid Gemini response structure:', data);
-      return res.status(200).json({
-        response: getFallbackResponse(message),
-        source: 'invalid_response_fallback',
-        timestamp: new Date().toISOString()
-      });
+      return res.status(500).json({ error: 'Invalid AI response' });
     }
 
+    // Add source verification to response
     const aiResponse = data.candidates[0].content.parts[0].text;
     
-    // Verify response doesn't contain speculative language
+    // If response seems to contain generated info, fall back to static
     if (containsGeneratedInfo(aiResponse)) {
-      console.log('⚠️ AI response contains speculative content, using fallback');
+      console.log('⚠️ AI response contains generated info, using fallback');
       return res.status(200).json({
         response: getFallbackResponse(message),
-        source: 'speculation_fallback',
+        source: 'fallback',
         timestamp: new Date().toISOString()
       });
     }
@@ -154,87 +170,15 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('❌ Error:', error.message);
-    
-    // Always fallback gracefully
     return res.status(200).json({
-      response: getFallbackResponse(req.body?.message || ''),
+      response: getFallbackResponse(message),
       source: 'error_fallback',
       timestamp: new Date().toISOString()
     });
   }
 }
 
-// Build comprehensive system prompt with Cole's actual data
-function buildSystemPrompt() {
-  return `You are Cole Lenting's portfolio assistant. You must ONLY use the following verified information:
-
-PERSONAL INFO:
-- Name: Cole Lenting
-- Location: Cape Town, South Africa
-- Email: colelenting7@gmail.com
-- Phone: 081 348 9356
-- Portfolio: https://colelenting.vercel.app/
-- GitHub: https://github.com/coleLenting
-
-EDUCATION:
-- Diploma in ICT in Multimedia - CPUT (2022-2024)
-- Full Stack Developer (Java) - IT Academy (2021)
-- NQF Level 4 - Hopefield High School (2020) with bachelor's pass
-- Admitted to pursue Advanced Diploma in ICT, specializing in Multimedia
-
-WORK EXPERIENCE:
-1. Work Integrated Learning - BIIC | Pillar 5 Group (Jul-Sep 2024)
-   - Integrated academic studies with practical work
-   - Developed academic, social, and technological competencies
-
-2. Website Developer - Kamikaze Innovations (Feb-Jul 2024)
-   - Designed and developed custom websites
-   - Created comprehensive design systems
-   - Built responsive sites from scratch
-   - Delivered full project documentation
-
-CURRENT STATUS:
-- Working at Capaciti
-- Business hours: 8 AM - 5 PM SAST (South African Standard Time)
-- Available for discussions outside work hours
-
-TECHNICAL SKILLS:
-Frontend: HTML5, CSS3/SASS, JavaScript, React, jQuery
-Backend: PHP, Laravel, MySQL, Database Design
-Design: Adobe Photoshop, Adobe Illustrator, Adobe InDesign, UI/UX Design, CapCut
-
-PROFESSIONAL DESCRIPTION:
-Cole is a dedicated ICT graduate specializing in Multimedia. He's passionate about front-end development and UI/UX design, with strong foundations in creativity and decision-making. Cole is committed to creating impactful technological solutions and is currently enhancing his skills in Adobe software while exploring backend development.
-
-STRICT RULES:
-1. NEVER make up information not listed above
-2. NEVER speculate or use phrases like "probably", "might", "I think", "possibly"
-3. Keep responses under 200 words
-4. Use 1-2 emojis per response for personality
-5. Be conversational but stick to facts
-6. If asked about something not in the data, say: "I can only share information from Cole's CV and portfolio. For that specific detail, please contact Cole directly."
-7. For availability questions, check current time in SAST timezone
-8. Always stay professional and helpful
-
-RESPONSE STYLE:
-- Natural and conversational tone
-- Enthusiastic about Cole's skills and experience
-- Direct and informative
-- Include relevant links when helpful (portfolio, GitHub, email)`;
-}
-
-// Check if message is an exact match for static responses
-function isExactMatch(message) {
-  const lowercaseMessage = message.toLowerCase().trim();
-  const exactPhrases = [
-    'hi', 'hello', 'hey', 'download cv', 'download resume',
-    'get cv', 'get resume', 'contact', 'email', 'phone'
-  ];
-  
-  return exactPhrases.some(phrase => lowercaseMessage === phrase);
-}
-
-// Get static response from chatbot-data
+// Add these helper functions
 function getStaticResponse(message) {
   const lowercaseMessage = message.toLowerCase();
   
@@ -248,59 +192,42 @@ function getStaticResponse(message) {
   return null;
 }
 
-// Enhanced fallback with better matching
 function getFallbackResponse(message) {
   const chatbotData = global.chatbotData;
   const lowercaseMessage = message.toLowerCase();
   
-  // Try keyword matching with scoring
-  let bestMatch = 'unknown';
-  let highestScore = 0;
-  
   for (const [key, keywords] of Object.entries(global.keywordMappings)) {
-    const matchCount = keywords.filter(keyword => 
-      lowercaseMessage.includes(keyword)
-    ).length;
-    
-    if (matchCount > highestScore) {
-      highestScore = matchCount;
-      bestMatch = key;
+    if (keywords.some(keyword => lowercaseMessage.includes(keyword))) {
+      return chatbotData[key]?.message || chatbotData.unknown.message;
     }
-  }
-  
-  if (chatbotData[bestMatch] && highestScore > 0) {
-    return chatbotData[bestMatch].message;
   }
   
   return chatbotData.unknown.message;
 }
 
-// Enhanced detection of speculative/generated content
 function containsGeneratedInfo(response) {
-  const speculativePatterns = [
-    'i believe',
-    'probably',
-    'might be',
-    'could be',
-    'possibly',
-    'i think',
-    'perhaps',
-    'maybe',
-    'likely',
-    'seems like',
-    'appears to',
-    'would be',
-    'should be',
-    'may have',
-    'may be',
-    'could have',
-    'might have',
-    'i assume',
-    'i guess',
-    'presumably',
-    'supposedly'
-  ];
-  
-  const lowerResponse = response.toLowerCase();
-  return speculativePatterns.some(pattern => lowerResponse.includes(pattern));
+    const generatedPatterns = [
+        'I believe',
+        'probably',
+        'might be',
+        'could be',
+        'possibly',
+        'I think',
+        'perhaps',
+        'maybe',
+        'seems to',
+        'appears to',
+        'likely',
+        'would',
+        'should',
+        'potential',
+        'may have',
+        'around',
+        'approximately'
+    ];
+    
+    const responseLower = response.toLowerCase();
+    return generatedPatterns.some(pattern => 
+        responseLower.includes(pattern.toLowerCase())
+    ) || response.includes('...');
 }

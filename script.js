@@ -8,13 +8,13 @@ let isProcessing = false;
 
 window.onload = function() {
     setTimeout(() => {
-        const welcomeMessage = `Hi there! ðŸ‘‹ I'm Cole Lenting's portfolio assistant. How can I help you learn more about Cole?
+        const welcomeMessage = `Hi there! 👋 I'm Cole Lenting's portfolio assistant. How can I help you learn more about Cole?
 
 Quick actions:
-â€¢ Tell me about Cole
-â€¢ What's Cole doing now?
-â€¢ View his work
-â€¢ Download his CV`;
+• Tell me about Cole
+• What's Cole doing now?
+• View his work
+• Download his CV`;
 
         displayBotMessage(welcomeMessage);
         addToHistory('assistant', welcomeMessage);
@@ -55,16 +55,16 @@ async function handleUserInput(message) {
         hideTypingIndicator();
         console.error('Error:', error);
 
-        const errorMessage = `I apologize, but I'm having trouble connecting right now. ðŸ˜”
+        const errorMessage = `I apologize, but I'm having trouble connecting right now. 😔
 
 Here's Cole's contact information in the meantime:
-ðŸ“§ Email: colelenting7@gmail.com
-ðŸ“± Phone: 081 348 9356
+📧 Email: colelenting7@gmail.com
+📱 Phone: 081 348 9356
 
 Quick actions:
-â€¢ Try asking again
-â€¢ Download CV (/assets/coleLenting-CV.pdf)
-â€¢ Visit portfolio ( https://colelenting.vercel.app/ )`;
+• Try asking again
+• Download CV (/assets/coleLenting-CV.pdf)
+• Visit portfolio ( https://colelenting.vercel.app/ )`;
 
         displayBotMessage(errorMessage);
     } finally {
@@ -75,6 +75,12 @@ Quick actions:
 
 async function callGeminiAPI(message) {
     try {
+        // Check if we have access to the chatbot data first
+        if (!window.chatbotData || !window.keywordMappings) {
+            console.error('Chatbot data not loaded');
+            return "I apologize, but I'm having trouble accessing my knowledge base. Please try again in a moment.";
+        }
+
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
@@ -87,46 +93,54 @@ async function callGeminiAPI(message) {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API Response Error:', response.status, errorText);
-            
-            // Check for rate limit error
-            if (response.status === 429) {
-                console.log('Rate limit reached, falling back to static responses');
-                return getFallbackResponse(message);
-            }
-            
-            throw new Error(`API error: ${response.status} - ${errorText}`);
+            console.error('API Response Error:', response.status);
+            // Use fallback from chatbot-data
+            const fallbackKey = getFallbackKey(message);
+            return window.chatbotData[fallbackKey]?.message || 
+                   window.chatbotData.unknown.message;
         }
 
         const data = await response.json();
         return data.response;
     } catch (error) {
         console.error('Fetch Error:', error);
-        return getFallbackResponse(message);
+        // Safely handle fallback even if data structure is incomplete
+        try {
+            const fallbackKey = getFallbackKey(message);
+            return window.chatbotData[fallbackKey]?.message || 
+                   window.chatbotData.unknown.message;
+        } catch (fallbackError) {
+            console.error('Fallback Error:', fallbackError);
+            return "I apologize, but I'm having trouble responding right now. Please try again in a moment.";
+        }
     }
 }
 
-// Add this new function for fallback responses
-function getFallbackResponse(message) {
-    const chatbotData = window.chatbotData; // Access the data from chatbot-data.js
-    
-    // Simple keyword matching to find the most relevant response
-    const lowercaseMessage = message.toLowerCase();
-    let bestMatch = 'unknown';
+function getFallbackKey(message) {
+    try {
+        const lowercaseMessage = message.toLowerCase();
+        let bestMatch = 'unknown';
+        let maxMatches = 0;
 
-    for (const [key, keywords] of Object.entries(window.keywordMappings)) {
-        if (keywords.some(keyword => lowercaseMessage.includes(keyword))) {
-            bestMatch = key;
-            break;
+        // Safely check if keywordMappings exists
+        if (window.keywordMappings) {
+            for (const [key, keywords] of Object.entries(window.keywordMappings)) {
+                const matches = keywords.filter(keyword => 
+                    lowercaseMessage.includes(keyword)
+                ).length;
+
+                if (matches > maxMatches) {
+                    maxMatches = matches;
+                    bestMatch = key;
+                }
+            }
         }
-    }
 
-    if (chatbotData[bestMatch]) {
-        return chatbotData[bestMatch].message;
+        return bestMatch;
+    } catch (error) {
+        console.error('Error in getFallbackKey:', error);
+        return 'unknown';
     }
-
-    return chatbotData.unknown.message;
 }
 
 function addToHistory(role, content) {
@@ -170,10 +184,10 @@ function displayBotMessage(message) {
     
     // Add external link bubbles
     const externalLinks = [
-        { text: "ðŸ”—", url: "https://colelenting.vercel.app/", title: "Portfolio" },
-        { text: "ðŸ’»", url: "https://github.com/coleLenting", title: "GitHub" },
-        { text: "ðŸ“§", url: "mailto:colelenting7@gmail.com", title: "Email" },
-        { text: "ðŸ“„", url: "/assets/coleLenting-CV.pdf", title: "CV", download: true }
+        { text: "🔗", url: "https://colelenting.vercel.app/", title: "Portfolio" },
+        { text: "💻", url: "https://github.com/coleLenting", title: "GitHub" },
+        { text: "📧", url: "mailto:colelenting7@gmail.com", title: "Email" },
+        { text: "📄", url: "/assets/coleLenting-CV.pdf", title: "CV", download: true }
     ];
 
     externalLinks.forEach(link => {
@@ -204,10 +218,10 @@ function addChatQuickActions(container) {
     quickActionsContainer.classList.add('quick-actions');
     
     const chatActions = [
-        { text: "About Cole", query: "Tell me about Cole", icon: "ðŸ‘‹" },
-        { text: "Current Status", query: "What is Cole currently doing?", icon: "â°" },
-        { text: "View Work", query: "Show me Cole's work experience", icon: "ðŸ’¼" },
-        { text: "Skills", query: "What are Cole's skills?", icon: "ðŸš€" }
+        { text: "About Cole", query: "Tell me about Cole", icon: "👋" },
+        { text: "Current Status", query: "What is Cole currently doing?", icon: "⏰" },
+        { text: "View Work", query: "Show me Cole's work experience", icon: "💼" },
+        { text: "Skills", query: "What are Cole's skills?", icon: "🚀" }
     ];
 
     chatActions.forEach(action => {
@@ -228,7 +242,7 @@ function formatMessage(text) {
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/\n/g, '<br>')
-        .replace(/â€¢ /g, '&bull; ');
+        .replace(/• /g, '&bull; ');
 
     formatted = formatted.replace(
         /\[([^\]]+)\]\(([^)]+)\)/g,
