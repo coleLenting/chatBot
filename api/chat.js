@@ -50,7 +50,8 @@ GUIDELINES:
 - Don't include "Quick actions" sections in responses
 - Keep responses under 200 words
 - Focus on directly answering the user's question
-- Don't include lists of contact methods or links in responses`;
+- Don't include lists of contact methods or links in responses
+- use information only from Cole Lenting's portfolio and CV`;
 
     // Build conversation for Gemini
     const contents = [];
