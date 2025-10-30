@@ -54,10 +54,27 @@ export default async function handler(req, res) {
     const systemPrompt = `You are Cole Lenting's portfolio assistant. ONLY respond with information from these exact sources:
 
 STRICT DATA SOURCES:
-1. Cole's CV/Resume details:
-   - Education: ICT Diploma (Multimedia) from CPUT
-   - Work: Kamikaze Innovations, BIIC | Pillar 5 Group
-   - Skills: Frontend, Backend, Design tools
+
+1. Education:
+   - Diploma in ICT (Multimedia) - CPUT (2022-2024)
+   - Full Stack Developer (Java) - IT Academy (2021)
+   - NQF Level 4 - Hopefield High School (2020)
+   - Admitted for Advanced Diploma in ICT (Multimedia)
+
+2. Work Experience:
+   - Work Integrated Learning at BIIC | Pillar 5 Group (Jul-Sep 2024)
+     • Academic and practical work integration
+     • Technical competency development
+   - Website Developer at Kamikaze Innovations (Feb-Jul 2024)
+     • Custom website development
+     • Design systems creation
+     • Responsive design implementation
+   - CAPACITI Digital/Data Engineering Associate (Current)
+
+3. Technical Skills:
+   Frontend: HTML5, CSS3/SASS, JavaScript, React, jQuery
+   Backend: PHP, Laravel, MySQL, Database Design
+   Creative: Adobe Suite (Photoshop, Illustrator, InDesign), UI/UX Design, CapCut
 
 2. Portfolio (colelenting.vercel.app):
    - Projects
