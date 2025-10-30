@@ -1,3 +1,8 @@
+import { chatbotData, keywordMappings } from '../chatbot-data.js';
+
+global.chatbotData = chatbotData;
+global.keywordMappings = keywordMappings;
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,9 +20,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Log for debugging
     console.log('📨 Received request');
-
     const { message, conversationHistory = [] } = req.body;
 
     if (!message) {
@@ -25,33 +28,45 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    // Get API key
+    // First try to match with static data
+    const staticResponse = getStaticResponse(message);
+    if (staticResponse) {
+      console.log('✅ Using static response from chatbot-data.js');
+      return res.status(200).json({
+        response: staticResponse,
+        source: 'static',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // If no static match, proceed with API
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     
     if (!GEMINI_API_KEY) {
-      console.error('❌ GEMINI_API_KEY not found in environment');
-      return res.status(500).json({ error: 'API key not configured' });
+      console.log('❌ No API key, falling back to static data');
+      return res.status(200).json({
+        response: getFallbackResponse(message),
+        source: 'fallback',
+        timestamp: new Date().toISOString()
+      });
     }
 
-    console.log('✅ API key found');
+    const systemPrompt = `You are Cole Lenting's portfolio assistant. Only use information from these sources:
 
-    // Get current time
-    const now = new Date();
-    const sastTime = new Date(now.toLocaleString('en-US', { timeZone: 'Africa/Johannesburg' }));
-    const hour = sastTime.getHours();
-    const isWorkHours = hour >= 8 && hour < 17;
+APPROVED SOURCES:
+- Cole's CV/Resume
+- Portfolio: https://colelenting.vercel.app/
+- GitHub: https://github.com/coleLenting
 
-    const systemPrompt = `You are Cole Lenting's portfolio assistant. Help visitors learn about Cole in a friendly, professional manner.
-
-GUIDELINES:
-- Be friendly and concise (2-3 paragraphs max)
-- Use 1-2 emojis per response
-- Keep responses conversational and natural
-- Don't include "Quick actions" sections in responses
+STRICT GUIDELINES:
+- Only respond with information from approved sources
+- Do not generate or assume additional information
 - Keep responses under 200 words
-- Focus on directly answering the user's question
-- Don't include lists of contact methods or links in responses
-- use information only from Cole Lenting's portfolio and CV`;
+- Use 1-2 emojis per response
+- Be conversational but factual
+- Don't include lists of contact methods
+- Don't mention "Quick actions" in responses
+- If information isn't in approved sources, say "I can only provide information from Cole's CV and portfolio."`;
 
     // Build conversation for Gemini
     const contents = [];
@@ -117,30 +132,76 @@ GUIDELINES:
       return res.status(500).json({ error: 'Invalid AI response' });
     }
 
+    // Add source verification to response
     const aiResponse = data.candidates[0].content.parts[0].text;
-
-    console.log('✅ Sending response to client');
+    
+    // If response seems to contain generated info, fall back to static
+    if (containsGeneratedInfo(aiResponse)) {
+      console.log('⚠️ AI response contains generated info, using fallback');
+      return res.status(200).json({
+        response: getFallbackResponse(message),
+        source: 'fallback',
+        timestamp: new Date().toISOString()
+      });
+    }
 
     return res.status(200).json({
       response: aiResponse,
+      source: 'api',
       timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error('❌ Error in chat handler:', error.message);
-    console.error('❌ Error stack:', error.stack);
-    
-    // Handle timeout
-    if (error.name === 'AbortError') {
-      return res.status(504).json({ 
-        error: 'Request timeout',
-        message: 'The AI is taking too long to respond. Please try again.'
-      });
-    }
-
-    return res.status(500).json({
-      error: 'Internal server error',
-      message: error.message
+    console.error('❌ Error:', error.message);
+    return res.status(200).json({
+      response: getFallbackResponse(message),
+      source: 'error_fallback',
+      timestamp: new Date().toISOString()
     });
   }
+}
+
+// Add these helper functions
+function getStaticResponse(message) {
+  const lowercaseMessage = message.toLowerCase();
+  
+  // Check direct matches in chatbot-data first
+  for (const [key, keywords] of Object.entries(global.keywordMappings)) {
+    if (keywords.some(keyword => lowercaseMessage.includes(keyword))) {
+      return global.chatbotData[key]?.message;
+    }
+  }
+  
+  return null;
+}
+
+function getFallbackResponse(message) {
+  const chatbotData = global.chatbotData;
+  const lowercaseMessage = message.toLowerCase();
+  
+  for (const [key, keywords] of Object.entries(global.keywordMappings)) {
+    if (keywords.some(keyword => lowercaseMessage.includes(keyword))) {
+      return chatbotData[key]?.message || chatbotData.unknown.message;
+    }
+  }
+  
+  return chatbotData.unknown.message;
+}
+
+function containsGeneratedInfo(response) {
+  // Add keywords or patterns that might indicate generated content
+  const generatedPatterns = [
+    'I believe',
+    'probably',
+    'might be',
+    'could be',
+    'possibly',
+    'I think',
+    'perhaps',
+    'maybe'
+  ];
+  
+  return generatedPatterns.some(pattern => 
+    response.toLowerCase().includes(pattern.toLowerCase())
+  );
 }
