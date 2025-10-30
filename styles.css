@@ -68,7 +68,7 @@ body {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 24px; 
     background: #f8f9fa;
     scroll-behavior: smooth;
 }
@@ -499,57 +499,70 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-width: 80%;
+    max-width: 75%; /* Reduced from 80% to make more space for bubbles */
 }
 
 /* Message wrapper and link bubbles */
 .message-wrapper {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    position: relative; 
     margin-bottom: 8px;
 }
 
 .link-bubbles {
+    position: absolute;
+    right: -80px; /* Moved further right */
+    top: 50%;
+    transform: translateY(-50%);
     display: grid;
     grid-template-columns: repeat(2, 32px);
     grid-template-rows: repeat(2, 32px);
     gap: 8px;
-    margin-top: 4px;
+    width: 72px; /* 2 columns * 32px + 8px gap */
+    
 }
 
-.link-bubble {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: #f8f9fa;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    font-size: 16px;
-    transition: all 0.2s ease;
-    border: 1px solid #e0e0e0;
-    color: #495057;
-}
+    .link-bubble {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
 
-.link-bubble:hover {
-    transform: scale(1.1);
-    background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
-    color: white;
-    border-color: transparent;
-    box-shadow: 0 2px 8px rgba(73, 98, 246, 0.2);
-}
-
+    .link-bubble:hover {
+        transform: scale(1.1);
+        background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%) !important;
+        color: white;
+        border-color: transparent;
+    }
 /* Quick action buttons */
 .quick-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 12px;
+    width: 135%;
+    overflow-x: auto;
+    padding-bottom: 4px; /* Space for potential scrollbar */
+    -ms-overflow-style: none; /* Hide scrollbar IE and Edge */
+    scrollbar-width: none; /* Hide scrollbar Firefox */
+}
+
+.quick-actions::-webkit-scrollbar {
+    display: none; /* Hide scrollbar Chrome, Safari, Opera */
 }
 
 .quick-action-btn {
+    flex: 0 0 auto; /* Prevent buttons from shrinking */
     background: #f8f9fa;
     border: 1px solid #e0e0e0;
     border-radius: 20px;
@@ -640,13 +653,13 @@ body {
     }
 
     .quick-action-btn {
-        background: #2c2c2c;
-        border-color: #444;
+        background: #2c2c2c !important;    
+        border-color: #444 !important;
         color: #e0e0e0;
     }
 
     .quick-action-btn:hover {
-        background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
+        background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%) !important;
         color: white;
     }
 
@@ -657,30 +670,15 @@ body {
         margin-bottom: 8px;
     }
 
-    .link-bubbles {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 4px;
-    }
 
     .link-bubble {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: #f0f0f0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        font-size: 16px;
-        transition: all 0.2s ease;
-        border: 1px solid #e0e0e0;
+        background: #2c2c2c !important;
+        border: 1px solid #444 !important;;
     }
 
     .link-bubble:hover {
         transform: scale(1.1);
-        background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
+        background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%) !important;
         color: white;
         border-color: transparent;
     }
