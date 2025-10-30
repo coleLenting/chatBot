@@ -121,6 +121,7 @@ body {
     align-self: flex-start;
     border: 1px solid #e9ecef;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-right: 84px;  /* Added space for bubbles (32px * 2 + 8px gap + 12px wrapper gap) */
 }
 
 .bot-message strong {
@@ -508,14 +509,21 @@ body {
     align-items: flex-start;
     gap: 12px;
     margin-bottom: 8px;
+    position: relative;  /* Added for positioning */
 }
 
 .link-bubbles {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
     display: grid;
     grid-template-columns: repeat(2, 32px);
     grid-template-rows: repeat(2, 32px);
     gap: 8px;
-    margin-top: 4px;
+    margin: 0;
+    width: 72px; /* 2 columns * 32px + 8px gap */
+    height: 72px; /* 2 rows * 32px + 8px gap */
 }
 
 .link-bubble {
@@ -533,47 +541,7 @@ body {
     color: #495057;
 }
 
-.link-bubble:hover {
-    transform: scale(1.1);
-    background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
-    color: white;
-    border-color: transparent;
-    box-shadow: 0 2px 8px rgba(73, 98, 246, 0.2);
-}
-
-/* Quick action buttons */
-.quick-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.quick-action-btn {
-    background: #f8f9fa;
-    border: 1px solid #e0e0e0;
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: #495057;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-}
-
-.quick-action-btn:hover {
-    background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(73, 98, 246, 0.2);
-    border-color: transparent;
-}
-
-/* Dark mode support */
+/* Dark mode adjustments */
 @media (prefers-color-scheme: dark) {
     body {
         background: #121212;
