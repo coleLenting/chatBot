@@ -3,20 +3,9 @@
   "functions": {
     "api/**/*.js": {
       "memory": 1024,
-      "maxDuration": 30
-    }
-  },
-  "rewrites": [
-    {
+
       "source": "/api/(.*)",
       "destination": "/api/$1"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/chat",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "/api/chat.js"
-    }
-  ]
+  }
 }
