@@ -502,12 +502,51 @@ body {
     max-width: 80%;
 }
 
+/* Message wrapper and link bubbles */
+.message-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.link-bubbles {
+    display: grid;
+    grid-template-columns: repeat(2, 32px);
+    grid-template-rows: repeat(2, 32px);
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.link-bubble {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    border: 1px solid #e0e0e0;
+    color: #495057;
+}
+
+.link-bubble:hover {
+    transform: scale(1.1);
+    background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(73, 98, 246, 0.2);
+}
+
+/* Quick action buttons */
 .quick-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 15px;
-    margin-bottom: 15px;
+    gap: 8px;
+    margin-top: 12px;
 }
 
 .quick-action-btn {
