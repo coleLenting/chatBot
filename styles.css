@@ -512,7 +512,7 @@ body {
 
 .quick-action-btn {
     background: #f8f9fa;
-    border: 1px solid #e9ecef;
+    border: 1px solid #e0e0e0;
     border-radius: 20px;
     padding: 8px 16px;
     font-size: 13px;
@@ -609,5 +609,63 @@ body {
     .quick-action-btn:hover {
         background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
         color: white;
+    }
+
+    .message-wrapper {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .link-bubbles {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .link-bubble {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        border: 1px solid #e0e0e0;
+    }
+
+    .link-bubble:hover {
+        transform: scale(1.1);
+        background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
+        color: white;
+        border-color: transparent;
+    }
+
+    .quick-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .quick-action-btn {
+        background: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .quick-action-btn:hover {
+        background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
+        color: white;
+        border-color: transparent;
     }
 }

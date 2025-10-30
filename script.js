@@ -153,57 +153,70 @@ function displayBotMessage(message) {
     const messageContainer = document.createElement('div');
     messageContainer.classList.add('bot-message-container');
 
+    const messageWrapper = document.createElement('div');
+    messageWrapper.classList.add('message-wrapper');
+
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', 'bot-message');
     
-    // Clean up the message by removing the Quick actions section
     const cleanMessage = message.split(/Quick actions:|Quick Actions:/)[0].trim();
     messageElement.innerHTML = formatMessage(cleanMessage);
 
     makeLinksClickable(messageElement);
-    messageContainer.appendChild(messageElement);
     
-    // Add enhanced quick action buttons
-    addEnhancedQuickActions(messageContainer);
+    // Create link bubbles container
+    const linkBubbles = document.createElement('div');
+    linkBubbles.classList.add('link-bubbles');
+    
+    // Add external link bubbles
+    const externalLinks = [
+        { text: "🔗", url: "https://colelenting.vercel.app/", title: "Portfolio" },
+        { text: "💻", url: "https://github.com/coleLenting", title: "GitHub" },
+        { text: "📧", url: "mailto:colelenting7@gmail.com", title: "Email" },
+        { text: "📄", url: "/assets/coleLenting-CV.pdf", title: "CV", download: true }
+    ];
+
+    externalLinks.forEach(link => {
+        const bubble = document.createElement('a');
+        bubble.href = link.url;
+        bubble.className = 'link-bubble';
+        bubble.innerHTML = link.text;
+        bubble.title = link.title;
+        bubble.target = link.download ? '_self' : '_blank';
+        bubble.rel = 'noopener noreferrer';
+        if (link.download) bubble.download = '';
+        linkBubbles.appendChild(bubble);
+    });
+
+    messageWrapper.appendChild(messageElement);
+    messageWrapper.appendChild(linkBubbles);
+    messageContainer.appendChild(messageWrapper);
+
+    // Add chat quick actions below
+    addChatQuickActions(messageContainer);
     
     messagesContainer.appendChild(messageContainer);
     scrollToBottom();
 }
 
-function addEnhancedQuickActions(container) {
+function addChatQuickActions(container) {
     const quickActionsContainer = document.createElement('div');
     quickActionsContainer.classList.add('quick-actions');
     
-    const actions = [
-        // External links
-        { text: "View Portfolio", url: "https://colelenting.vercel.app/", icon: "🔗" },
-        { text: "GitHub Profile", url: "https://github.com/coleLenting", icon: "💻" },
-        { text: "Email Cole", url: "mailto:colelenting7@gmail.com", icon: "📧" },
-        { text: "Download CV", url: "/assets/coleLenting-CV.pdf", icon: "📄", download: true },
-        
-        // Chat actions
+    const chatActions = [
         { text: "About Cole", query: "Tell me about Cole", icon: "👋" },
         { text: "Current Status", query: "What is Cole currently doing?", icon: "⏰" },
         { text: "View Work", query: "Show me Cole's work experience", icon: "💼" },
         { text: "Skills", query: "What are Cole's skills?", icon: "🚀" }
     ];
 
-    actions.forEach(item => {
-        const button = document.createElement(item.url ? 'a' : 'button');
+    chatActions.forEach(action => {
+        const button = document.createElement('button');
         button.classList.add('quick-action-btn');
-        
-        if (item.url) {
-            button.href = item.url;
-            button.target = item.download ? '_self' : '_blank';
-            button.rel = 'noopener noreferrer';
-            if (item.download) button.download = '';
-        } else if (item.query) {
-            button.addEventListener('click', () => {
-                handleUserInput(item.query);
-            });
-        }
-
-        button.innerHTML = `${item.icon} ${item.text}`;
+        button.innerHTML = `${action.icon} ${action.text}`;
+        button.addEventListener('click', () => {
+            handleUserInput(action.query);
+        });
         quickActionsContainer.appendChild(button);
     });
 
