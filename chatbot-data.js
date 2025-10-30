@@ -55,32 +55,7 @@ const chatbotData = {
         ]
     },
     skills: {
-        message: "Cole's technical expertise:",
-        customHTML: `
-            <div class="skill-category">🎨 Frontend Development</div>
-            <div class="skills-container">
-                <div class="skill-item">HTML5</div>
-                <div class="skill-item">CSS3/SASS</div>
-                <div class="skill-item">JavaScript</div>
-                <div class="skill-item">React</div>
-                <div class="skill-item">jQuery</div>
-            </div>
-            <div class="skill-category">⚙️ Backend & Database</div>
-            <div class="skills-container">
-                <div class="skill-item">PHP</div>
-                <div class="skill-item">Laravel</div>
-                <div class="skill-item">MySQL</div>
-                <div class="skill-item">Database Design</div>
-            </div>
-            <div class="skill-category">🎯 Design & Creative</div>
-            <div class="skills-container">
-                <div class="skill-item">Adobe Photoshop</div>
-                <div class="skill-item">Adobe Illustrator</div>
-                <div class="skill-item">Adobe InDesign</div>
-                <div class="skill-item">UI/UX Design</div>
-                <div class="skill-item">CapCut</div>
-            </div>
-        `,
+        message: "Cole's technical expertise:\n\n**🎨 Frontend Development**\n• HTML5\n• CSS3/SASS\n• JavaScript\n• React\n• jQuery\n\n**⚙️ Backend & Database**\n• PHP\n• Laravel\n• MySQL\n• Database Design\n\n**🎯 Design & Creative**\n• Adobe Photoshop\n• Adobe Illustrator\n• Adobe InDesign\n• UI/UX Design\n• CapCut",
         options: [
             { text: "See his projects", nextState: "experience" },
             { text: "Download detailed CV", nextState: "cv" },
@@ -98,22 +73,21 @@ const chatbotData = {
         ]
     },
     cv: {
-        message: "📄 **Cole Lenting's CV/Resume**\n\nGet Cole's complete professional profile including:\n• Full work experience details\n• Complete educational background\n• Comprehensive skills list\n• Project portfolio\n• Contact information\n\nChoose your preferred format:",
-        customHTML: `
-            <div class="cv-download-container">
-                <div class="cv-option">
-                    <h4>📄 PDF Format</h4>
-                    <p>Perfect for printing and professional sharing</p>
-                    <a href="./assets/coleLenting-CV.pdf" download="Cole_Lenting_CV.pdf" class="cv-download-btn pdf-btn">
-                        <span class="download-icon">⬇️</span>
-                        Download PDF CV
-                    </a>
-                </div>
-            </div>
-            <div class="cv-preview-note">
-                <p><strong>💡 Note:</strong> Cole's CV is regularly updated with his latest projects and achievements. Last updated: ${getLastUpdated()}</p>
-            </div>
-        `,
+        message: `📄 **Cole Lenting's CV/Resume**
+
+Get Cole's complete professional profile including:
+• Full work experience details
+• Complete educational background
+• Comprehensive skills list
+• Project portfolio
+• Contact information
+
+Choose your preferred format:
+
+**📄 PDF Format**
+Download: /assets/coleLenting-CV.pdf
+
+💡 Note: Cole's CV is regularly updated with his latest projects and achievements. Last updated: ${getLastUpdated()}`,
         options: [
             { text: "Contact Cole directly", nextState: "contact" },
             { text: "Learn more about him", nextState: "about" },
