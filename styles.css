@@ -457,6 +457,36 @@ body {
     font-size: 14px;
 }
 
+.chat-link {
+    color: #4962f6;
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid #4962f6;
+    transition: all 0.2s ease;
+}
+
+.chat-link:hover {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+    background-color: rgba(73, 98, 246, 0.1);
+}
+
+.cv-link {
+    display: inline-block;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
+    color: white !important;
+    border-radius: 6px;
+    border: none !important;
+    margin: 4px 0;
+}
+
+.cv-link:hover {
+    background: linear-gradient(135deg, #3b51d6 0%, #2563eb 50%, #1d4ed8 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(73, 98, 246, 0.3);
+}
+
 .resume-redirect {
     text-align: center;
     padding: 20px;

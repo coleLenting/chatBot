@@ -1,237 +1,172 @@
-// DOM Elements
 const messagesContainer = document.getElementById('chat-messages');
 const userInput = document.getElementById('user-input');
 const sendButton = document.getElementById('send-button');
 const typingIndicator = document.getElementById('typing-indicator');
 
-// Initialize current state
-let currentState = "welcome";
-let lastUserMessage = "";
+let conversationHistory = [];
+let isProcessing = false;
 
-// Initialize the chat when the page loads
 window.onload = function() {
     setTimeout(() => {
-        displayBotMessage(chatbotData[currentState]);
+        const welcomeMessage = `Hi there! 👋 I'm Cole Lenting's portfolio assistant. How can I help you learn more about Cole?
+
+Quick actions:
+• Tell me about Cole
+• What's Cole doing now?
+• View his work
+• Download his CV`;
+
+        displayBotMessage(welcomeMessage);
+        addToHistory('assistant', welcomeMessage);
     }, 500);
 };
 
-// Event listeners
 sendButton.addEventListener('click', handleUserInput);
 userInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isProcessing) {
         handleUserInput();
     }
 });
 
-// Handle user input
-function handleUserInput() {
+async function handleUserInput() {
     const userMessage = userInput.value.trim();
-    if (userMessage.length === 0) return;
-    
+    if (userMessage.length === 0 || isProcessing) return;
+
     displayUserMessage(userMessage);
-    lastUserMessage = userMessage;
+    addToHistory('user', userMessage);
     userInput.value = '';
-    
-    // Show typing indicator
+
+    isProcessing = true;
+    sendButton.disabled = true;
     showTypingIndicator();
-    
-    // Process user input after a delay
-    setTimeout(() => {
-        processUserInput(userMessage);
+
+    try {
+        const response = await callGeminiAPI(userMessage);
+
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 600));
+
         hideTypingIndicator();
-    }, Math.random() * 800 + 600); // Random delay between 600-1400ms for more natural feel
+        displayBotMessage(response);
+        addToHistory('assistant', response);
+
+    } catch (error) {
+        hideTypingIndicator();
+        console.error('Error:', error);
+
+        const errorMessage = `I apologize, but I'm having trouble connecting right now. 😔
+
+Here's Cole's contact information in the meantime:
+📧 Email: colelenting7@gmail.com
+📱 Phone: 081 348 9356
+
+Quick actions:
+• Try asking again
+• Download CV (/assets/coleLenting-CV.pdf)
+• Visit portfolio (https://www.colelenting.com/)`;
+
+        displayBotMessage(errorMessage);
+    } finally {
+        isProcessing = false;
+        sendButton.disabled = false;
+    }
 }
 
-// Enhanced user input processing with better NLP
-function processUserInput(message) {
-    const lowerMessage = message.toLowerCase().trim();
-    let matchedState = null;
-    let confidence = 0;
-    
-    // Check for exact matches with option texts first
-    for (const state in chatbotData) {
-        if (chatbotData[state].options) {
-            for (const option of chatbotData[state].options) {
-                if (lowerMessage === option.text.toLowerCase()) {
-                    matchedState = option.nextState;
-                    confidence = 1.0;
-                    break;
-                }
-            }
-        }
-        if (matchedState) break;
+async function callGeminiAPI(message) {
+    const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message: message,
+            conversationHistory: conversationHistory.slice(-20)
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
     }
-    
-    // If no exact match, try keyword matching with scoring
-    if (!matchedState) {
-        const stateScores = {};
-        
-        for (const [state, keywords] of Object.entries(keywordMappings)) {
-            stateScores[state] = 0;
-            
-            for (const keyword of keywords) {
-                if (lowerMessage.includes(keyword)) {
-                    // Give higher score for exact word matches
-                    const words = lowerMessage.split(/\s+/);
-                    if (words.includes(keyword)) {
-                        stateScores[state] += 2;
-                    } else {
-                        stateScores[state] += 1;
-                    }
-                }
-            }
-        }
-        
-        // Find the state with the highest score
-        let maxScore = 0;
-        for (const [state, score] of Object.entries(stateScores)) {
-            if (score > maxScore) {
-                maxScore = score;
-                matchedState = state;
-                confidence = score / 10; // Normalize confidence
-            }
-        }
-    }
-    
-    // Handle special cases and contextual responses
-    if (!matchedState || confidence < 0.1) {
-        matchedState = getContextualResponse(lowerMessage);
-    }
-    
-    // Default to unknown if no match found
-    currentState = matchedState || "unknown";
-    displayBotMessage(chatbotData[currentState]);
+
+    const data = await response.json();
+    return data.response;
 }
 
-// Get contextual response based on conversation flow
-function getContextualResponse(message) {
-    // Handle common conversational patterns
-    if (message.includes("yes") || message.includes("yeah") || message.includes("sure")) {
-        // Continue with current context
-        return currentState;
+function addToHistory(role, content) {
+    conversationHistory.push({ role, content });
+
+    if (conversationHistory.length > 20) {
+        conversationHistory = conversationHistory.slice(-20);
     }
-    
-    if (message.includes("no") || message.includes("nope")) {
-        return "welcome";
-    }
-    
-    // Handle questions
-    if (message.startsWith("what") || message.includes("what")) {
-        if (message.includes("do") || message.includes("doing")) {
-            return "current_status";
-        }
-        return "about";
-    }
-    
-    if (message.startsWith("how") || message.includes("how")) {
-        if (message.includes("contact") || message.includes("reach")) {
-            return "contact";
-        }
-        return "skills";
-    }
-    
-    if (message.startsWith("when") || message.includes("when")) {
-        return "availability";
-    }
-    
-    if (message.startsWith("where") || message.includes("where")) {
-        return "contact";
-    }
-    
-    // Handle polite responses
-    if (message.includes("please") || message.includes("could you")) {
-        return "about";
-    }
-    
-    return null;
 }
 
-// Display user message with enhanced styling
 function displayUserMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', 'user-message');
     messageElement.textContent = message;
-    
-    // Add timestamp for better UX
+
     const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     messageElement.setAttribute('data-time', timestamp);
-    
+
     messagesContainer.appendChild(messageElement);
     scrollToBottom();
 }
 
-// Display bot message with enhanced features
-function displayBotMessage(stateData) {
+function displayBotMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', 'bot-message');
-    
-    // Handle dynamic messages (functions)
-    let messageText = stateData.message;
-    if (typeof messageText === 'function') {
-        messageText = messageText();
-    }
-    
-    // Add the main message text with typing effect
-    if (messageText) {
-        messageElement.innerHTML = formatMessage(messageText);
-    }
-    
-    // If there's custom HTML, add it
-    if (stateData.customHTML) {
-        const customElement = document.createElement('div');
-        customElement.innerHTML = stateData.customHTML;
-        messageElement.appendChild(customElement);
-    }
-    
+
+    messageElement.innerHTML = formatMessage(message);
+
+    makeLinksClickable(messageElement);
+
     messagesContainer.appendChild(messageElement);
-    
-    // Add options buttons if available
-    if (stateData.options && stateData.options.length > 0) {
-        setTimeout(() => {
-            const optionsContainer = document.createElement('div');
-            optionsContainer.classList.add('options-container');
-            
-            stateData.options.forEach((option, index) => {
-                setTimeout(() => {
-                    const button = document.createElement('button');
-                    button.classList.add('option-button');
-                    button.textContent = option.text;
-                    button.addEventListener('click', () => {
-                        displayUserMessage(option.text);
-                        
-                        // Show typing indicator
-                        showTypingIndicator();
-                        
-                        // Process the next state after a delay
-                        setTimeout(() => {
-                            currentState = option.nextState;
-                            displayBotMessage(chatbotData[option.nextState]);
-                            hideTypingIndicator();
-                        }, Math.random() * 500 + 400);
-                    });
-                    
-                    optionsContainer.appendChild(button);
-                    scrollToBottom();
-                }, index * 150); // Stagger button appearance
-            });
-            
-            messagesContainer.appendChild(optionsContainer);
-        }, 300);
-    }
-    
     scrollToBottom();
 }
 
-// Format message text with markdown-like formatting
 function formatMessage(text) {
-    return text
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
-        .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic text
-        .replace(/\n/g, '<br>') // Line breaks
-        .replace(/• /g, '&bull; '); // Bullet points
+    let formatted = text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>')
+        .replace(/• /g, '&bull; ');
+
+    formatted = formatted.replace(
+        /\[([^\]]+)\]\(([^)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer" class="chat-link">$1</a>'
+    );
+
+    formatted = formatted.replace(
+        /(?<!href=["'])(https?:\/\/[^\s<]+)(?![^<]*<\/a>)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$1</a>'
+    );
+
+    formatted = formatted.replace(
+        /(\/assets\/[^\s<]+\.pdf)/g,
+        '<a href="$1" download class="chat-link cv-link">Download CV (PDF)</a>'
+    );
+
+    formatted = formatted.replace(
+        /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
+        '<a href="mailto:$1" class="chat-link">$1</a>'
+    );
+
+    formatted = formatted.replace(
+        /(\d{3}\s\d{3}\s\d{4})/g,
+        '<a href="tel:+27$1" class="chat-link">$1</a>'
+    );
+
+    return formatted;
 }
 
-// Enhanced typing indicator
+function makeLinksClickable(element) {
+    const links = element.querySelectorAll('a');
+    links.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    });
+}
+
 function showTypingIndicator() {
     typingIndicator.style.display = 'block';
     typingIndicator.classList.add('active');
@@ -243,73 +178,8 @@ function hideTypingIndicator() {
     typingIndicator.classList.remove('active');
 }
 
-// Smooth scroll to bottom
 function scrollToBottom() {
     setTimeout(() => {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }, 100);
 }
-
-// Enhanced chat history management (in-memory only)
-let chatHistory = [];
-
-function saveChatMessage(sender, message, timestamp = new Date()) {
-    chatHistory.push({
-        sender: sender,
-        message: message,
-        timestamp: timestamp,
-        state: currentState
-    });
-}
-
-// Auto-save messages
-function displayUserMessage(message) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message', 'user-message');
-    messageElement.textContent = message;
-    
-    const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    messageElement.setAttribute('data-time', timestamp);
-    
-    messagesContainer.appendChild(messageElement);
-    saveChatMessage('user', message);
-    scrollToBottom();
-}
-
-// Add some personality responses for common inputs
-const personalityResponses = {
-    "cool": "Thanks! Cole really is pretty cool - especially when he's coding! 😎",
-    "awesome": "I'm glad you think so! Cole would be thrilled to hear that! ✨",
-    "nice": "Right? Cole has put a lot of effort into developing his skills! 👍",
-    "wow": "I know, right? Cole's journey in tech has been quite impressive! 🚀",
-    "interesting": "Cole's background is definitely interesting - lots of diverse experience! 🤓"
-};
-
-// Handle personality responses
-function checkPersonalityResponse(message) {
-    const lowerMessage = message.toLowerCase();
-    for (const [trigger, response] of Object.entries(personalityResponses)) {
-        if (lowerMessage.includes(trigger)) {
-            return {
-                message: response,
-                options: [
-                    { text: "Tell me more", nextState: "about" },
-                    { text: "Contact Cole", nextState: "contact" },
-                    { text: "Back to menu", nextState: "welcome" }
-                ]
-            };
-        }
-    }
-    return null;
-}
-
-// Update processUserInput to include personality check
-const originalProcessUserInput = processUserInput;
-processUserInput = function(message) {
-    const personalityResponse = checkPersonalityResponse(message);
-    if (personalityResponse) {
-        displayBotMessage(personalityResponse);
-        return;
-    }
-    originalProcessUserInput(message);
-};
