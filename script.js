@@ -8,13 +8,13 @@ let isProcessing = false;
 
 window.onload = function() {
     setTimeout(() => {
-        const welcomeMessage = `Hi there! 👋 I'm Cole Lenting's portfolio assistant. How can I help you learn more about Cole?
+        const welcomeMessage = `Hi there! ðŸ‘‹ I'm Cole Lenting's portfolio assistant. How can I help you learn more about Cole?
 
 Quick actions:
-• Tell me about Cole
-• What's Cole doing now?
-• View his work
-• Download his CV`;
+â€¢ Tell me about Cole
+â€¢ What's Cole doing now?
+â€¢ View his work
+â€¢ Download his CV`;
 
         displayBotMessage(welcomeMessage);
         addToHistory('assistant', welcomeMessage);
@@ -55,16 +55,16 @@ async function handleUserInput(message) {
         hideTypingIndicator();
         console.error('Error:', error);
 
-        const errorMessage = `I apologize, but I'm having trouble connecting right now. 😔
+        const errorMessage = `I apologize, but I'm having trouble connecting right now. ðŸ˜”
 
 Here's Cole's contact information in the meantime:
-📧 Email: colelenting7@gmail.com
-📱 Phone: 081 348 9356
+ðŸ“§ Email: colelenting7@gmail.com
+ðŸ“± Phone: 081 348 9356
 
 Quick actions:
-• Try asking again
-• Download CV (/assets/coleLenting-CV.pdf)
-• Visit portfolio ( https://colelenting.vercel.app/ )`;
+â€¢ Try asking again
+â€¢ Download CV (/assets/coleLenting-CV.pdf)
+â€¢ Visit portfolio ( https://colelenting.vercel.app/ )`;
 
         displayBotMessage(errorMessage);
     } finally {
@@ -170,10 +170,10 @@ function displayBotMessage(message) {
     
     // Add external link bubbles
     const externalLinks = [
-        { text: "🔗", url: "https://colelenting.vercel.app/", title: "Portfolio" },
-        { text: "💻", url: "https://github.com/coleLenting", title: "GitHub" },
-        { text: "📧", url: "mailto:colelenting7@gmail.com", title: "Email" },
-        { text: "📄", url: "/assets/coleLenting-CV.pdf", title: "CV", download: true }
+        { text: "ðŸ”—", url: "https://colelenting.vercel.app/", title: "Portfolio" },
+        { text: "ðŸ’»", url: "https://github.com/coleLenting", title: "GitHub" },
+        { text: "ðŸ“§", url: "mailto:colelenting7@gmail.com", title: "Email" },
+        { text: "ðŸ“„", url: "/assets/coleLenting-CV.pdf", title: "CV", download: true }
     ];
 
     externalLinks.forEach(link => {
@@ -204,10 +204,10 @@ function addChatQuickActions(container) {
     quickActionsContainer.classList.add('quick-actions');
     
     const chatActions = [
-        { text: "About Cole", query: "Tell me about Cole", icon: "👋" },
-        { text: "Current Status", query: "What is Cole currently doing?", icon: "⏰" },
-        { text: "View Work", query: "Show me Cole's work experience", icon: "💼" },
-        { text: "Skills", query: "What are Cole's skills?", icon: "🚀" }
+        { text: "About Cole", query: "Tell me about Cole", icon: "ðŸ‘‹" },
+        { text: "Current Status", query: "What is Cole currently doing?", icon: "â°" },
+        { text: "View Work", query: "Show me Cole's work experience", icon: "ðŸ’¼" },
+        { text: "Skills", query: "What are Cole's skills?", icon: "ðŸš€" }
     ];
 
     chatActions.forEach(action => {
@@ -228,7 +228,7 @@ function formatMessage(text) {
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/\n/g, '<br>')
-        .replace(/• /g, '&bull; ');
+        .replace(/â€¢ /g, '&bull; ');
 
     formatted = formatted.replace(
         /\[([^\]]+)\]\(([^)]+)\)/g,
