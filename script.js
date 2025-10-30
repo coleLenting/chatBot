@@ -28,13 +28,18 @@ userInput.addEventListener('keypress', function(e) {
     }
 });
 
-async function handleUserInput() {
-    const userMessage = userInput.value.trim();
+async function handleUserInput(message) {
+    // Allow both manual input and programmatic messages
+    const userMessage = typeof message === 'string' ? message : userInput.value.trim();
     if (userMessage.length === 0 || isProcessing) return;
 
     displayUserMessage(userMessage);
     addToHistory('user', userMessage);
-    userInput.value = '';
+    
+    // Only clear input if it was a manual entry
+    if (typeof message !== 'string') {
+        userInput.value = '';
+    }
 
     isProcessing = true;
     sendButton.disabled = true;
@@ -42,13 +47,10 @@ async function handleUserInput() {
 
     try {
         const response = await callGeminiAPI(userMessage);
-
         await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 600));
-
         hideTypingIndicator();
         displayBotMessage(response);
         addToHistory('assistant', response);
-
     } catch (error) {
         hideTypingIndicator();
         console.error('Error:', error);
@@ -180,10 +182,10 @@ function addEnhancedQuickActions(container) {
         { text: "Download CV", url: "/assets/coleLenting-CV.pdf", icon: "📄", download: true },
         
         // Chat actions
-        { text: "About Cole", action: "about", icon: "👋" },
-        { text: "Current Status", action: "current_status", icon: "⏰" },
-        { text: "View Work", action: "experience", icon: "💼" },
-        { text: "Skills", action: "skills", icon: "🚀" }
+        { text: "About Cole", query: "Tell me about Cole", icon: "👋" },
+        { text: "Current Status", query: "What is Cole currently doing?", icon: "⏰" },
+        { text: "View Work", query: "Show me Cole's work experience", icon: "💼" },
+        { text: "Skills", query: "What are Cole's skills?", icon: "🚀" }
     ];
 
     actions.forEach(item => {
@@ -195,9 +197,9 @@ function addEnhancedQuickActions(container) {
             button.target = item.download ? '_self' : '_blank';
             button.rel = 'noopener noreferrer';
             if (item.download) button.download = '';
-        } else {
+        } else if (item.query) {
             button.addEventListener('click', () => {
-                handleUserInput(item.text);
+                handleUserInput(item.query);
             });
         }
 
@@ -206,38 +208,6 @@ function addEnhancedQuickActions(container) {
     });
 
     container.appendChild(quickActionsContainer);
-}
-
-async function handleBotResponse(action) {
-    if (isProcessing) return;
-    
-    isProcessing = true;
-    sendButton.disabled = true;
-    showTypingIndicator();
-
-    try {
-        let response;
-        if (window.chatbotData && window.chatbotData[action]) {
-            // Use predefined response from chatbot-data.js
-            await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 600));
-            response = window.chatbotData[action].message;
-        } else {
-            // Fallback to API if no predefined response exists
-            response = await callGeminiAPI(action);
-        }
-
-        hideTypingIndicator();
-        displayBotMessage(response);
-        addToHistory('assistant', response);
-
-    } catch (error) {
-        console.error('Error:', error);
-        hideTypingIndicator();
-        displayBotMessage("I apologize, but I'm having trouble responding right now. Please try again.");
-    } finally {
-        isProcessing = false;
-        sendButton.disabled = false;
-    }
 }
 
 function formatMessage(text) {
