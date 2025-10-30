@@ -1,4 +1,4 @@
-import { chatbotData, keywordMappings } from '../server-chatbot-data.mjs';
+import { chatbotData, keywordMappings } from '../chatbot-data.js';
 
 global.chatbotData = chatbotData;
 global.keywordMappings = keywordMappings;
