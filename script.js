@@ -84,10 +84,16 @@ async function callGeminiAPI(message) {
             })
         });
 
-        // Log the actual error
         if (!response.ok) {
             const errorText = await response.text();
             console.error('API Response Error:', response.status, errorText);
+            
+            // Check for rate limit error
+            if (response.status === 429) {
+                console.log('Rate limit reached, falling back to static responses');
+                return getFallbackResponse(message);
+            }
+            
             throw new Error(`API error: ${response.status} - ${errorText}`);
         }
 
@@ -95,8 +101,30 @@ async function callGeminiAPI(message) {
         return data.response;
     } catch (error) {
         console.error('Fetch Error:', error);
-        throw error;
+        return getFallbackResponse(message);
     }
+}
+
+// Add this new function for fallback responses
+function getFallbackResponse(message) {
+    const chatbotData = window.chatbotData; // Access the data from chatbot-data.js
+    
+    // Simple keyword matching to find the most relevant response
+    const lowercaseMessage = message.toLowerCase();
+    let bestMatch = 'unknown';
+
+    for (const [key, keywords] of Object.entries(window.keywordMappings)) {
+        if (keywords.some(keyword => lowercaseMessage.includes(keyword))) {
+            bestMatch = key;
+            break;
+        }
+    }
+
+    if (chatbotData[bestMatch]) {
+        return chatbotData[bestMatch].message;
+    }
+
+    return chatbotData.unknown.message;
 }
 
 function addToHistory(role, content) {
@@ -120,15 +148,55 @@ function displayUserMessage(message) {
 }
 
 function displayBotMessage(message) {
+    const messageContainer = document.createElement('div');
+    messageContainer.classList.add('bot-message-container');
+
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', 'bot-message');
-
     messageElement.innerHTML = formatMessage(message);
 
     makeLinksClickable(messageElement);
+    
+    // Add quick action buttons
+    const quickActionsContainer = document.createElement('div');
+    quickActionsContainer.classList.add('quick-actions');
+    
+    const actions = [
+        { text: "Tell me about Cole", action: "about" },
+        { text: "What's Cole doing now?", action: "current_status" },
+        { text: "View his work", action: "experience" },
+        { text: "Download his CV", action: "cv" }
+    ];
 
-    messagesContainer.appendChild(messageElement);
+    actions.forEach(action => {
+        const button = document.createElement('button');
+        button.classList.add('quick-action-btn');
+        button.textContent = action.text;
+        button.addEventListener('click', () => {
+            handleQuickAction(action.action);
+        });
+        quickActionsContainer.appendChild(button);
+    });
+
+    messageContainer.appendChild(messageElement);
+    messageContainer.appendChild(quickActionsContainer);
+    messagesContainer.appendChild(messageContainer);
     scrollToBottom();
+}
+
+// Add this new function to handle quick actions
+async function handleQuickAction(action) {
+    if (isProcessing) return;
+
+    const actionMessages = {
+        about: "Tell me about Cole",
+        current_status: "What is Cole currently doing?",
+        experience: "Show me Cole's work experience",
+        cv: "I'd like to see Cole's CV"
+    };
+
+    const message = actionMessages[action] || action;
+    handleUserInput(message);
 }
 
 function formatMessage(text) {
@@ -176,8 +244,15 @@ function makeLinksClickable(element) {
 }
 
 function showTypingIndicator() {
+    // Remove existing typing indicator if any
+    const existingIndicator = document.querySelector('.typing-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+
     typingIndicator.style.display = 'block';
     typingIndicator.classList.add('active');
+    messagesContainer.appendChild(typingIndicator);
     scrollToBottom();
 }
 

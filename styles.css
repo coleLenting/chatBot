@@ -495,6 +495,40 @@ body {
     margin: 10px 0;
 }
 
+.bot-message-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 80%;
+}
+
+.quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.quick-action-btn {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: #333;
+}
+
+.quick-action-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.typing-indicator {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
 @media (prefers-color-scheme: dark) {
     body {
         background: #121212;
