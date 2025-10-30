@@ -61,8 +61,8 @@ Here's Cole's contact information in the meantime:
 
 Quick actions:
 • Try asking again
-• Download CV ("./assets/coleLenting-CV.pdf")
-• Visit portfolio (https://colelenting.vercel.app/)`;
+• Download CV (/assets/coleLenting-CV.pdf)
+• Visit portfolio ( https://colelenting.vercel.app/ )`;
 
         displayBotMessage(errorMessage);
     } finally {
@@ -72,23 +72,31 @@ Quick actions:
 }
 
 async function callGeminiAPI(message) {
-    const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            message: message,
-            conversationHistory: conversationHistory.slice(-20)
-        })
-    });
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: message,
+                conversationHistory: conversationHistory.slice(-20)
+            })
+        });
 
-    if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        // Log the actual error
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Response Error:', response.status, errorText);
+            throw new Error(`API error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        return data.response;
+    } catch (error) {
+        console.error('Fetch Error:', error);
+        throw error;
     }
-
-    const data = await response.json();
-    return data.response;
 }
 
 function addToHistory(role, content) {

@@ -1,187 +1,150 @@
 export default async function handler(req, res) {
+  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+  // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
+  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    // Log for debugging
+    console.log('📨 Received request');
+
     const { message, conversationHistory = [] } = req.body;
 
     if (!message) {
+      console.error('❌ No message provided');
       return res.status(400).json({ error: 'Message is required' });
     }
 
+    // Get API key
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
+    
     if (!GEMINI_API_KEY) {
+      console.error('❌ GEMINI_API_KEY not found in environment');
       return res.status(500).json({ error: 'API key not configured' });
     }
 
-    const currentTime = new Date().toLocaleString('en-US', {
-      timeZone: 'Africa/Johannesburg',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZoneName: 'short'
-    });
+    console.log('✅ API key found');
 
-    const currentHour = new Date(
-      new Date().toLocaleString('en-US', { timeZone: 'Africa/Johannesburg' })
-    ).getHours();
+    // Get current time
+    const now = new Date();
+    const sastTime = new Date(now.toLocaleString('en-US', { timeZone: 'Africa/Johannesburg' }));
+    const hour = sastTime.getHours();
+    const isWorkHours = hour >= 8 && hour < 17;
 
-    const isWorkHours = currentHour >= 8 && currentHour < 17;
-    const availabilityStatus = isWorkHours
-      ? "Cole is currently at work (8 AM - 5 PM SAST at Capaciti) but will respond to messages soon"
-      : "Cole is available and free to chat right now";
+    const systemPrompt = `You are Cole Lenting's portfolio assistant. Help visitors learn about Cole in a friendly, professional manner.
 
-    const systemPrompt = `You are Cole Lenting's portfolio assistant. You help visitors learn about Cole, a talented ICT Multimedia graduate and frontend developer from Cape Town, South Africa.
+CURRENT TIME: ${sastTime.toLocaleString('en-US', { timeZone: 'Africa/Johannesburg' })}
+WORK STATUS: ${isWorkHours ? 'Cole is at work (Capaciti, 8 AM - 5 PM SAST)' : 'Cole is available outside work hours'}
 
-PERSONALITY:
-- Friendly, professional, and enthusiastic
-- Use emojis sparingly (1-2 per message max)
-- Keep responses concise but informative (2-4 paragraphs maximum)
-- Proactive in offering relevant next steps
-- Natural and conversational tone
-
-CORE INFORMATION:
-
-PERSONAL:
-- Name: Cole Lenting
-- Role: ICT Multimedia Graduate, Frontend Developer, UI/UX Designer
+ABOUT COLE:
+- ICT Multimedia graduate, Frontend Developer & UI/UX Designer
 - Location: Cape Town, South Africa
-- Current Employer: Capaciti (8 AM - 5 PM SAST business hours)
+- Email: colelenting7@gmail.com
+- Phone: 081 348 9356
+- Portfolio: https://colelenting.vercel.app/
+- GitHub: https://github.com/coleLenting
+- LinkedIn: https://www.linkedin.com/in/cole-lenting-92135a295/
 
 EDUCATION:
 - Diploma in ICT in Multimedia - CPUT (2022-2024)
 - Full Stack Developer (Java) - IT Academy (2021)
 - NQF Level 4 - Hopefield High School (2020)
-- Admitted to pursue Advanced Diploma in ICT, specializing in Multimedia
 
 EXPERIENCE:
 - Work Integrated Learning - BIIC | Pillar 5 Group (Jul-Sep 2024)
-  • Integrated academic studies with practical work
-  • Developed academic, social, and technological competencies
 - Website Developer - Kamikaze Innovations (Feb-Jul 2024)
-  • Designed and developed custom websites
-  • Created comprehensive design systems
-  • Built responsive sites from scratch
-  • Delivered full project documentation
 
-TECHNICAL SKILLS:
+SKILLS:
 Frontend: HTML5, CSS3/SASS, JavaScript, React, jQuery
-Backend: PHP, Laravel, MySQL, Database Design
-Design: Adobe Photoshop, Adobe Illustrator, Adobe InDesign, UI/UX Design, CapCut
+Backend: PHP, Laravel, MySQL
+Design: Adobe Photoshop, Illustrator, InDesign, UI/UX Design
 
-CONTACT INFORMATION:
-- Email: colelenting7@gmail.com
-- Phone: 081 348 9356
-- Location: Cape Town, South Africa
-- GitHub: https://github.com/coleLenting
-- Portfolio: https://www.colelenting.com/
-- LinkedIn: https://www.linkedin.com/in/cole-lenting-92135a295/
-- CV Download: /assets/coleLenting-CV.pdf
+CV: /assets/coleLenting-CV.pdf
 
-CURRENT TIME AWARENESS:
-- Current time in SAST: ${currentTime}
-- Status: ${availabilityStatus}
+GUIDELINES:
+- Be friendly and concise (2-3 paragraphs max)
+- Use 1-2 emojis per response
+- End with 2-4 quick action suggestions
+- Format links as [text](url)
+- Keep responses under 200 words`;
 
-CAPABILITIES:
-- Answer questions about Cole's background, education, skills, and experience
-- Provide contact information with clickable links
-- Offer CV download (link: /assets/coleLenting-CV.pdf)
-- Share links to portfolio, GitHub, and LinkedIn when relevant
-- Give project details and technical expertise
-- Discuss availability and best times to reach Cole
+    // Build conversation for Gemini
+    const contents = [];
 
-CONVERSATION GUIDELINES:
-- Always offer 2-4 relevant quick action suggestions after each response in this format at the END of your message:
-
-  Quick actions:
-  • [Action 1]
-  • [Action 2]
-  • [Action 3]
-  • [Action 4]
-
-- When mentioning the CV, provide the download link: /assets/coleLenting-CV.pdf
-- When mentioning external links, format them as clickable: [text](url)
-- Use markdown formatting: **bold** for emphasis, bullet points for lists
-- If asked about something you don't know, admit it honestly and offer related information
-- Never make up information not in the knowledge base
-- Keep responses focused and conversational
-- Avoid repeating information already shared in the conversation
-
-RESPONSE FORMAT:
-- Start with a direct answer to the question
-- Provide 2-3 key details in bullet points if relevant
-- End with 2-4 contextual quick action suggestions
-- Use line breaks for readability
-
-IMPORTANT:
-- If someone asks about downloading CV or resume, provide this exact link: /assets/coleLenting-CV.pdf
-- For contact requests, always include email and phone
-- For portfolio/work requests, include GitHub and portfolio links
-- Keep responses under 200 words unless detailed technical info is requested`;
-
-    const conversationContext = conversationHistory
-      .slice(-10)
-      .map((msg) => ({
+    // Add conversation history (last 10 messages)
+    conversationHistory.slice(-10).forEach(msg => {
+      contents.push({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }]
-      }));
+      });
+    });
 
-    const geminiPayload = {
-      contents: [
-        ...conversationContext,
-        {
-          role: 'user',
-          parts: [{ text: message }]
-        }
-      ],
-      systemInstruction: {
-        parts: [{ text: systemPrompt }]
-      },
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024
-      }
-    };
+    // Add current message
+    contents.push({
+      role: 'user',
+      parts: [{ text: message }]
+    });
+
+    console.log('🤖 Calling Gemini API...');
+
+    // Call Gemini API with timeout
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(geminiPayload)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents,
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 800
+          }
+        }),
+        signal: controller.signal
       }
     );
 
+    clearTimeout(timeout);
+
     if (!geminiResponse.ok) {
-      const errorData = await geminiResponse.json();
-      console.error('Gemini API error:', errorData);
-      return res.status(geminiResponse.status).json({
-        error: 'Failed to get response from AI',
-        details: errorData
+      const errorText = await geminiResponse.text();
+      console.error('❌ Gemini API error:', geminiResponse.status, errorText);
+      return res.status(500).json({ 
+        error: 'AI service error',
+        details: errorText 
       });
     }
 
     const data = await geminiResponse.json();
+    console.log('✅ Gemini response received');
 
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-      return res.status(500).json({ error: 'Invalid response from AI' });
+    // Validate response
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      console.error('❌ Invalid Gemini response structure:', data);
+      return res.status(500).json({ error: 'Invalid AI response' });
     }
 
     const aiResponse = data.candidates[0].content.parts[0].text;
+
+    console.log('✅ Sending response to client');
 
     return res.status(200).json({
       response: aiResponse,
@@ -189,7 +152,17 @@ IMPORTANT:
     });
 
   } catch (error) {
-    console.error('Error in chat API:', error);
+    console.error('❌ Error in chat handler:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    
+    // Handle timeout
+    if (error.name === 'AbortError') {
+      return res.status(504).json({ 
+        error: 'Request timeout',
+        message: 'The AI is taking too long to respond. Please try again.'
+      });
+    }
+
     return res.status(500).json({
       error: 'Internal server error',
       message: error.message
