@@ -505,39 +505,36 @@ body {
 .quick-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-top: 15px;
+    margin-bottom: 15px;
 }
 
 .quick-action-btn {
-    background-color: #f0f0f0;
-    border: 1px solid #ddd;
-    border-radius: 16px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 20px;
     padding: 8px 16px;
-    font-size: 0.9em;
+    font-size: 13px;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: #333;
+    color: #495057;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     white-space: nowrap;
 }
 
 .quick-action-btn:hover {
-    background-color: #e0e0e0;
+    background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
+    color: white;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(73, 98, 246, 0.2);
+    border-color: transparent;
 }
 
-.quick-action-btn:active {
-    transform: translateY(0);
-    box-shadow: none;
-}
-
-.typing-indicator {
-    margin-top: 8px;
-    margin-bottom: 8px;
-}
-
+/* Dark mode support */
 @media (prefers-color-scheme: dark) {
     body {
         background: #121212;
@@ -601,5 +598,16 @@ body {
         background: linear-gradient(135deg, #2c2c2c, #3a3a3a);
         color: #f0f0f0;
         border: 1px solid #444;
+    }
+
+    .quick-action-btn {
+        background: #2c2c2c;
+        border-color: #444;
+        color: #e0e0e0;
+    }
+
+    .quick-action-btn:hover {
+        background: linear-gradient(135deg, #4962f6 0%, #3b82f6 50%, #2563eb 100%);
+        color: white;
     }
 }

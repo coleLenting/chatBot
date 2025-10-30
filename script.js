@@ -153,39 +153,55 @@ function displayBotMessage(message) {
 
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', 'bot-message');
-    messageElement.innerHTML = formatMessage(message);
+    
+    // Clean up the message by removing the Quick actions section
+    const cleanMessage = message.split(/Quick actions:|Quick Actions:/)[0].trim();
+    messageElement.innerHTML = formatMessage(cleanMessage);
 
     makeLinksClickable(messageElement);
     messageContainer.appendChild(messageElement);
     
-    // Add quick action buttons below every message
-    addQuickActionButtons(messageContainer);
+    // Add enhanced quick action buttons
+    addEnhancedQuickActions(messageContainer);
     
     messagesContainer.appendChild(messageContainer);
     scrollToBottom();
 }
 
-function addQuickActionButtons(container) {
+function addEnhancedQuickActions(container) {
     const quickActionsContainer = document.createElement('div');
     quickActionsContainer.classList.add('quick-actions');
     
     const actions = [
-        { text: "Tell me about Cole", action: "about" },
-        { text: "What's Cole doing now?", action: "current_status" },
-        { text: "View his work", action: "experience" },
-        { text: "Download his CV", action: "cv" }
+        // External links
+        { text: "View Portfolio", url: "https://colelenting.vercel.app/", icon: "🔗" },
+        { text: "GitHub Profile", url: "https://github.com/coleLenting", icon: "💻" },
+        { text: "Email Cole", url: "mailto:colelenting7@gmail.com", icon: "📧" },
+        { text: "Download CV", url: "/assets/coleLenting-CV.pdf", icon: "📄", download: true },
+        
+        // Chat actions
+        { text: "About Cole", action: "about", icon: "👋" },
+        { text: "Current Status", action: "current_status", icon: "⏰" },
+        { text: "View Work", action: "experience", icon: "💼" },
+        { text: "Skills", action: "skills", icon: "🚀" }
     ];
 
-    actions.forEach(action => {
-        const button = document.createElement('button');
+    actions.forEach(item => {
+        const button = document.createElement(item.url ? 'a' : 'button');
         button.classList.add('quick-action-btn');
-        button.textContent = action.text;
-        button.addEventListener('click', () => {
-            const userMessage = action.text;
-            displayUserMessage(userMessage);
-            addToHistory('user', userMessage);
-            handleBotResponse(action.action);
-        });
+        
+        if (item.url) {
+            button.href = item.url;
+            button.target = item.download ? '_self' : '_blank';
+            button.rel = 'noopener noreferrer';
+            if (item.download) button.download = '';
+        } else {
+            button.addEventListener('click', () => {
+                handleUserInput(item.text);
+            });
+        }
+
+        button.innerHTML = `${item.icon} ${item.text}`;
         quickActionsContainer.appendChild(button);
     });
 

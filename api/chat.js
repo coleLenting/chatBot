@@ -43,40 +43,14 @@ export default async function handler(req, res) {
 
     const systemPrompt = `You are Cole Lenting's portfolio assistant. Help visitors learn about Cole in a friendly, professional manner.
 
-CURRENT TIME: ${sastTime.toLocaleString('en-US', { timeZone: 'Africa/Johannesburg' })}
-WORK STATUS: ${isWorkHours ? 'Cole is at work (Capaciti, 8 AM - 5 PM SAST)' : 'Cole is available outside work hours'}
-
-ABOUT COLE:
-- ICT Multimedia graduate, Frontend Developer & UI/UX Designer
-- Location: Cape Town, South Africa
-- Email: colelenting7@gmail.com
-- Phone: 081 348 9356
-- Portfolio: https://colelenting.vercel.app/
-- GitHub: https://github.com/coleLenting
-- LinkedIn: https://www.linkedin.com/in/cole-lenting-92135a295/
-
-EDUCATION:
-- Diploma in ICT in Multimedia - CPUT (2022-2024)
-- Full Stack Developer (Java) - IT Academy (2021)
-- NQF Level 4 - Hopefield High School (2020)
-
-EXPERIENCE:
-- Work Integrated Learning - BIIC | Pillar 5 Group (Jul-Sep 2024)
-- Website Developer - Kamikaze Innovations (Feb-Jul 2024)
-
-SKILLS:
-Frontend: HTML5, CSS3/SASS, JavaScript, React, jQuery
-Backend: PHP, Laravel, MySQL
-Design: Adobe Photoshop, Illustrator, InDesign, UI/UX Design
-
-CV: /assets/coleLenting-CV.pdf
-
 GUIDELINES:
 - Be friendly and concise (2-3 paragraphs max)
 - Use 1-2 emojis per response
-- End with 2-4 quick action suggestions
-- Format links as [text](url)
-- Keep responses under 200 words`;
+- Keep responses conversational and natural
+- Don't include "Quick actions" sections in responses
+- Keep responses under 200 words
+- Focus on directly answering the user's question
+- Don't include lists of contact methods or links in responses`;
 
     // Build conversation for Gemini
     const contents = [];
