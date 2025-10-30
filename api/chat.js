@@ -91,77 +91,79 @@ GUIDELINES:
     const fullPrompt = `${systemPrompt}\n\nConversation History:\n${formattedHistory}\n\nHuman: ${message}\nAssistant:`;
 
     console.log('🤖 Calling Hugging Face API...');
+    console.log('Debug - API Key exists:', !!HF_API_KEY);
+    console.log('Debug - API Key length:', HF_API_KEY?.length);
 
     // Call Hugging Face API with timeout
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
-    const response = await fetch(
-      'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${HF_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          inputs: fullPrompt,
-          parameters: {
-            max_new_tokens: 800,
-            temperature: 0.7,
-            top_k: 40,
-            top_p: 0.95,
-            return_full_text: false
-          }
-        }),
-        signal: controller.signal
+    try {
+      const response = await fetch(
+        'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${HF_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            inputs: fullPrompt,
+            parameters: {
+              max_new_tokens: 800,
+              temperature: 0.7,
+              top_k: 40,
+              top_p: 0.95,
+              return_full_text: false
+            }
+          }),
+          signal: controller.signal
+        }
+      );
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ HF API Status:', response.status);
+        console.error('❌ HF API Error:', errorText);
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
       }
-    );
 
-    clearTimeout(timeout);
+      const data = await response.json();
+      console.log('Debug - Raw API response:', JSON.stringify(data).slice(0, 200));
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Hugging Face API error:', response.status, errorText);
+      // Validate response
+      if (!data[0]?.generated_text) {
+        console.error('❌ Invalid HF response structure:', data);
+        return res.status(500).json({ error: 'Invalid AI response' });
+      }
+
+      const aiResponse = data[0].generated_text.trim();
+
+      console.log('✅ Sending response to client');
+
+      return res.status(200).json({
+        response: aiResponse,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ Error in chat handler:', error.message);
+      console.error('❌ Error stack:', error.stack);
+      
+      // Handle timeout
+      if (error.name === 'AbortError') {
+        return res.status(504).json({ 
+          error: 'Request timeout',
+          message: 'The AI is taking too long to respond. Please try again.'
+        });
+      }
+
       return res.status(500).json({
-        error: 'AI service error',
-        details: errorText
+        error: 'Internal server error',
+        message: error.message
       });
     }
-
-    const data = await response.json();
-    console.log('✅ HF response received');
-
-    // Validate response
-    if (!data[0]?.generated_text) {
-      console.error('❌ Invalid HF response structure:', data);
-      return res.status(500).json({ error: 'Invalid AI response' });
-    }
-
-    const aiResponse = data[0].generated_text.trim();
-
-    console.log('✅ Sending response to client');
-
-    return res.status(200).json({
-      response: aiResponse,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('❌ Error in chat handler:', error.message);
-    console.error('❌ Error stack:', error.stack);
-    
-    // Handle timeout
-    if (error.name === 'AbortError') {
-      return res.status(504).json({ 
-        error: 'Request timeout',
-        message: 'The AI is taking too long to respond. Please try again.'
-      });
-    }
-
-    return res.status(500).json({
-      error: 'Internal server error',
-      message: error.message
-    });
   }
 }
