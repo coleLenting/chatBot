@@ -17,7 +17,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Log for debugging
     console.log('📨 Received request');
 
     const { message, conversationHistory = [] } = req.body;
@@ -27,11 +26,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    // Get API key
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    // Get API key from environment variables
+    const HF_API_KEY = process.env.HF_API_KEY;
     
-    if (!GEMINI_API_KEY) {
-      console.error('❌ GEMINI_API_KEY not found in environment');
+    if (!HF_API_KEY) {
+      console.error('❌ HF_API_KEY not found in environment variables');
       return res.status(500).json({ error: 'API key not configured' });
     }
 
@@ -43,6 +42,7 @@ export default async function handler(req, res) {
     const hour = sastTime.getHours();
     const isWorkHours = hour >= 8 && hour < 17;
 
+    // Keep your existing detailed system prompt
     const systemPrompt = `You are Cole Lenting's portfolio assistant. Help visitors learn about Cole in a friendly, professional manner.
 
 CURRENT TIME: ${sastTime.toLocaleString('en-US', { timeZone: 'Africa/Johannesburg' })}
@@ -83,44 +83,35 @@ GUIDELINES:
 - Format links as [text](url)
 - Keep responses under 200 words`;
 
-    // Build conversation for Gemini
-    const contents = [];
+    // Build conversation history
+    const formattedHistory = conversationHistory.slice(-10).map(msg => 
+      `${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}`
+    ).join('\n');
 
-    // Add conversation history (last 10 messages)
-    conversationHistory.slice(-10).forEach(msg => {
-      contents.push({
-        role: msg.role === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.content }]
-      });
-    });
+    const fullPrompt = `${systemPrompt}\n\nConversation History:\n${formattedHistory}\n\nHuman: ${message}\nAssistant:`;
 
-    // Add current message
-    contents.push({
-      role: 'user',
-      parts: [{ text: message }]
-    });
+    console.log('🤖 Calling Hugging Face API...');
 
-    console.log('🤖 Calling Gemini API...');
-
-    // Call Gemini API with timeout
+    // Call Hugging Face API with timeout
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    const timeout = setTimeout(() => controller.abort(), 8000);
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+    const response = await fetch(
+      'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${HF_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          contents,
-          systemInstruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          generationConfig: {
+          inputs: fullPrompt,
+          parameters: {
+            max_new_tokens: 800,
             temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 800
+            top_k: 40,
+            top_p: 0.95,
+            return_full_text: false
           }
         }),
         signal: controller.signal
@@ -129,25 +120,25 @@ GUIDELINES:
 
     clearTimeout(timeout);
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('❌ Gemini API error:', geminiResponse.status, errorText);
-      return res.status(500).json({ 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Hugging Face API error:', response.status, errorText);
+      return res.status(500).json({
         error: 'AI service error',
-        details: errorText 
+        details: errorText
       });
     }
 
-    const data = await geminiResponse.json();
-    console.log('✅ Gemini response received');
+    const data = await response.json();
+    console.log('✅ HF response received');
 
     // Validate response
-    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      console.error('❌ Invalid Gemini response structure:', data);
+    if (!data[0]?.generated_text) {
+      console.error('❌ Invalid HF response structure:', data);
       return res.status(500).json({ error: 'Invalid AI response' });
     }
 
-    const aiResponse = data.candidates[0].content.parts[0].text;
+    const aiResponse = data[0].generated_text.trim();
 
     console.log('✅ Sending response to client');
 
