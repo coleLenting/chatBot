@@ -1,26 +1,14 @@
 {
-  "version": 2,
   "functions": {
     "api/**/*.js": {
       "memory": 1024,
       "maxDuration": 30
     }
   },
-  "routes": [
-    {
-      "src": "/api/chat",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "/api/chat.js"
-    }
-  ],
-  "headers": [
+  "rewrites": [
     {
       "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
-      ]
+      "destination": "/api/$1"
     }
   ]
 }
