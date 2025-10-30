@@ -71,10 +71,8 @@ Quick actions:
     }
 }
 
-async function callGeminiAPI(message, conversationHistory = []) {
+async function callGeminiAPI(message) {
     try {
-        console.log('Sending message to API:', message);
-        
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
@@ -82,45 +80,25 @@ async function callGeminiAPI(message, conversationHistory = []) {
             },
             body: JSON.stringify({
                 message: message,
-                conversationHistory: conversationHistory
+                conversationHistory: conversationHistory.slice(-20)
             })
         });
 
+        // Log the actual error
         if (!response.ok) {
-            // If API returns error, use local fallback
-            console.log('API Response Error:', response.status, await response.text());
-            throw new Error(`API error: ${response.status}`);
+            const errorText = await response.text();
+            console.error('API Response Error:', response.status, errorText);
+            throw new Error(`API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
-        console.log('API Response:', data);
         return data.response;
-
     } catch (error) {
-        console.log('Fetch Error:', error);
-        // Use local fallback
-        return getFallbackResponse(message);
+        console.error('Fetch Error:', error);
+        throw error;
     }
 }
 
-// Local fallback function
-function getFallbackResponse(message) {
-    const userMessage = message.toLowerCase();
-    
-    if (userMessage.includes('hello') || userMessage.includes('hi') || userMessage.includes('hey')) {
-        return "Hello! I'm Cole's portfolio assistant. How can I help you learn about Cole today? 👋";
-    } else if (userMessage.includes('skill') || userMessage.includes('tech')) {
-        return "Cole specializes in frontend development and UI/UX design! 🎨 Skills: HTML5, CSS3, JavaScript, React, PHP, Laravel, MySQL, and Adobe Creative Suite.";
-    } else if (userMessage.includes('experience') || userMessage.includes('work')) {
-        return "Cole has experience as: Website Developer at Kamikaze Innovations and Work Integrated Learning at BIIC | Pillar 5 Group. 💼";
-    } else if (userMessage.includes('contact') || userMessage.includes('email') || userMessage.includes('linkedin')) {
-        return "Contact Cole: 📧 colelenting7@gmail.com | 📞 081 348 9356 | 💼 LinkedIn: https://linkedin.com/in/cole-lenting-92135a295/";
-    } else if (userMessage.includes('education') || userMessage.includes('study')) {
-        return "Cole's education: 🎓 Diploma in ICT Multimedia (CPUT), Full Stack Developer (IT Academy), and High School completion.";
-    } else {
-        return "I'd be happy to tell you about Cole! He's a frontend developer and UI/UX designer. Ask about his skills, experience, education, or contact info. 😊";
-    }
-}
 function addToHistory(role, content) {
     conversationHistory.push({ role, content });
 

@@ -106,107 +106,45 @@ GUIDELINES:
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
-    let useFallback = false;
-
-    try {
-      const geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents,
-            systemInstruction: {
-              parts: [{ text: systemPrompt }]
-            },
-            generationConfig: {
-              temperature: 0.7,
-              topK: 40,
-              topP: 0.95,
-              maxOutputTokens: 800
-            }
-          }),
-          signal: controller.signal
-        }
-      );
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents,
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 800
+          }
+        }),
+        signal: controller.signal
+      }
+    );
 
     clearTimeout(timeout);
 
-      // Check for rate limiting or quota exceeded
-      if (geminiResponse.status === 429 || geminiResponse.status === 529) {
-        console.log('⚠️ Rate limit reached, using fallback responses');
-        useFallback = true;
-      } else if (!geminiResponse.ok) {
-        const errorText = await geminiResponse.text();
-        console.error('❌ Gemini API error:', geminiResponse.status, errorText);
-        
-        // Check if it's a quota exceeded error
-        if (geminiResponse.status === 403 || errorText.includes('QUOTA') || errorText.includes('RATE_LIMIT')) {
-          console.log('⚠️ API quota exceeded, using fallback responses');
-          useFallback = true;
-        } else {
-          return res.status(500).json({ 
-            error: 'AI service error',
-            details: errorText 
-          });
-        }
-      }
-
-    } catch (fetchError) {
-      console.error('❌ Fetch error:', fetchError.message);
-      if (fetchError.name === 'AbortError') {
-        console.log('⚠️ Request timeout, using fallback responses');
-        useFallback = true;
-      } else {
-        console.log('⚠️ Network error, using fallback responses');
-        useFallback = true;
-      }
-    }
-
-     // Use fallback responses if needed
-    if (useFallback) {
-      console.log('🔄 Using fallback chatbot responses');
-      
-      const userMessage = message.toLowerCase().trim();
-      let fallbackResponse = chatbotData.default;
-      
-      // Find matching intent in chatbot data
-      for (const [intent, data] of Object.entries(chatbotData)) {
-        if (intent === 'default') continue;
-        
-        const keywords = data.keywords || [];
-        const foundKeyword = keywords.find(keyword => 
-          userMessage.includes(keyword.toLowerCase())
-        );
-        
-        if (foundKeyword) {
-          fallbackResponse = data.response;
-          console.log(`✅ Found fallback match for keyword: "${foundKeyword}"`);
-          break;
-        }
-      }
-
-       // If no specific match found, use greeting detection
-      if (fallbackResponse === chatbotData.default) {
-        const greetings = ['hello', 'hi', 'hey', 'greetings', 'howdy'];
-        const isGreeting = greetings.some(greet => userMessage.includes(greet));
-        
-        if (isGreeting) {
-          fallbackResponse = chatbotData.greeting.response;
-        }
-      }
-
-      return res.status(200).json({
-        response: fallbackResponse,
-        timestamp: new Date().toISOString(),
-        source: 'fallback'
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('❌ Gemini API error:', geminiResponse.status, errorText);
+      return res.status(500).json({ 
+        error: 'AI service error',
+        details: errorText 
       });
     }
 
-   // Validate response
+    const data = await geminiResponse.json();
+    console.log('✅ Gemini response received');
+
+    // Validate response
     if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
       console.error('❌ Invalid Gemini response structure:', data);
-      throw new Error('Invalid AI response structure');
+      return res.status(500).json({ error: 'Invalid AI response' });
     }
 
     const aiResponse = data.candidates[0].content.parts[0].text;
@@ -215,20 +153,24 @@ GUIDELINES:
 
     return res.status(200).json({
       response: aiResponse,
-      timestamp: new Date().toISOString(),
-      source: 'gemini'
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
     console.error('❌ Error in chat handler:', error.message);
+    console.error('❌ Error stack:', error.stack);
     
-    // Final fallback in case of any other errors
-    console.log('🔄 Using final fallback due to error');
-    
-    return res.status(200).json({
-      response: chatbotData.default,
-      timestamp: new Date().toISOString(),
-      source: 'error_fallback'
+    // Handle timeout
+    if (error.name === 'AbortError') {
+      return res.status(504).json({ 
+        error: 'Request timeout',
+        message: 'The AI is taking too long to respond. Please try again.'
+      });
+    }
+
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: error.message
     });
   }
 }
