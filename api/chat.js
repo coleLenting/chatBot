@@ -1,5 +1,6 @@
 import { chatbotData, keywordMappings } from '../chatbot-data.js';
 
+// Make data available globally for fallbacks
 global.chatbotData = chatbotData;
 global.keywordMappings = keywordMappings;
 
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    // First try to match with static data
+    // First try to match with static data (instant response)
     const staticResponse = getStaticResponse(message);
     if (staticResponse) {
       console.log('✅ Using static response from chatbot-data.js');
@@ -39,11 +40,11 @@ export default async function handler(req, res) {
       });
     }
 
-    // If no static match, proceed with API
+    // Check if API key is available
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     
     if (!GEMINI_API_KEY) {
-      console.log('❌ No API key, falling back to static data');
+      console.log('⚠️ No API key configured, using fallback');
       return res.status(200).json({
         response: getFallbackResponse(message),
         source: 'fallback',
@@ -51,7 +52,9 @@ export default async function handler(req, res) {
       });
     }
 
-    const systemPrompt = `You are Cole Lenting's portfolio assistant. ONLY respond with information from these exact sources:
+    // Try Gemini API
+    try {
+      const systemPrompt = `You are Cole Lenting's portfolio assistant. ONLY respond with information from these exact sources:
 
 STRICT DATA SOURCES:
 
@@ -76,15 +79,9 @@ STRICT DATA SOURCES:
    Backend: PHP, Laravel, MySQL, Database Design
    Creative: Adobe Suite (Photoshop, Illustrator, InDesign), UI/UX Design, CapCut
 
-2. Portfolio (colelenting.vercel.app):
-   - Projects
-   - Work samples
-   - Technical capabilities
-
-3. GitHub (github.com/coleLenting):
-   - Repositories
-   - Contributions
-   - Code examples
+4. Portfolio: colelenting.vercel.app
+5. GitHub: github.com/coleLenting
+6. Contact: colelenting7@gmail.com | 081 348 9356 | Cape Town, SA
 
 CRITICAL RULES:
 - NEVER generate, assume, or create information
@@ -92,159 +89,195 @@ CRITICAL RULES:
 - If information isn't in these sources, respond: "I can only share information directly from Cole's CV, portfolio, and GitHub."
 - Keep responses under 200 words
 - Be friendly but factual
-- Use 1-2 emojis maximum
-- Don't list contact methods in responses
-- Don't mention "Quick actions"
+- Use 1-2 emojis maximum`;
 
-RESPONSE FORMAT:
-- Short, direct answers
-- No speculative content
-- No generated examples
-- No assumptions about availability`;
+      // Build conversation for Gemini
+      const contents = [];
 
-    // Build conversation for Gemini
-    const contents = [];
+      // Add conversation history (last 10 messages)
+      conversationHistory.slice(-10).forEach(msg => {
+        contents.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.content }]
+        });
+      });
 
-    // Add conversation history (last 10 messages)
-    conversationHistory.slice(-10).forEach(msg => {
+      // Add current message
       contents.push({
-        role: msg.role === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.content }]
+        role: 'user',
+        parts: [{ text: message }]
       });
-    });
 
-    // Add current message
-    contents.push({
-      role: 'user',
-      parts: [{ text: message }]
-    });
+      console.log('🤖 Calling Gemini API...');
 
-    console.log('🤖 Calling Gemini API...');
+      // Call Gemini API with timeout
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-    // Call Gemini API with timeout
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+      const geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents,
+            systemInstruction: {
+              parts: [{ text: systemPrompt }]
+            },
+            generationConfig: {
+              temperature: 0.7,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 800
+            }
+          }),
+          signal: controller.signal
+        }
+      );
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          systemInstruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 800
-          }
-        }),
-        signal: controller.signal
+      clearTimeout(timeout);
+
+      // Handle API errors (including rate limits)
+      if (!geminiResponse.ok) {
+        const errorText = await geminiResponse.text();
+        console.error('⚠️ Gemini API error:', geminiResponse.status, errorText);
+        
+        // Check if it's a rate limit error
+        if (geminiResponse.status === 429 || errorText.includes('quota') || errorText.includes('rate limit')) {
+          console.log('📊 Rate limit hit, using fallback');
+          return res.status(200).json({
+            response: getFallbackResponse(message),
+            source: 'rate_limit_fallback',
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        // For other errors, also use fallback
+        return res.status(200).json({
+          response: getFallbackResponse(message),
+          source: 'api_error_fallback',
+          timestamp: new Date().toISOString()
+        });
       }
-    );
 
-    clearTimeout(timeout);
+      const data = await geminiResponse.json();
+      console.log('✅ Gemini response received');
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('❌ Gemini API error:', geminiResponse.status, errorText);
-      return res.status(500).json({ 
-        error: 'AI service error',
-        details: errorText 
+      // Validate response structure
+      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        console.error('❌ Invalid Gemini response structure');
+        return res.status(200).json({
+          response: getFallbackResponse(message),
+          source: 'invalid_response_fallback',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      const aiResponse = data.candidates[0].content.parts[0].text;
+      
+      // Verify response doesn't contain speculative content
+      if (containsGeneratedInfo(aiResponse)) {
+        console.log('⚠️ AI response contains speculative info, using fallback');
+        return res.status(200).json({
+          response: getFallbackResponse(message),
+          source: 'verification_fallback',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      return res.status(200).json({
+        response: aiResponse,
+        source: 'api',
+        timestamp: new Date().toISOString()
       });
-    }
 
-    const data = await geminiResponse.json();
-    console.log('✅ Gemini response received');
-
-    // Validate response
-    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      console.error('❌ Invalid Gemini response structure:', data);
-      return res.status(500).json({ error: 'Invalid AI response' });
-    }
-
-    // Add source verification to response
-    const aiResponse = data.candidates[0].content.parts[0].text;
-    
-    // If response seems to contain generated info, fall back to static
-    if (containsGeneratedInfo(aiResponse)) {
-      console.log('⚠️ AI response contains generated info, using fallback');
+    } catch (apiError) {
+      // Catch any API-related errors (timeout, network, etc.)
+      console.error('⚠️ API Error:', apiError.message);
       return res.status(200).json({
         response: getFallbackResponse(message),
-        source: 'fallback',
+        source: 'error_fallback',
         timestamp: new Date().toISOString()
       });
     }
 
-    return res.status(200).json({
-      response: aiResponse,
-      source: 'api',
-      timestamp: new Date().toISOString()
-    });
-
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    // Catch any general errors
+    console.error('❌ Handler Error:', error.message);
     return res.status(200).json({
-      response: getFallbackResponse(message),
+      response: getFallbackResponse(req.body?.message || ''),
       source: 'error_fallback',
       timestamp: new Date().toISOString()
     });
   }
 }
 
-// Add these helper functions
+// Helper: Get static response for exact keyword matches
 function getStaticResponse(message) {
   const lowercaseMessage = message.toLowerCase();
   
   // Check direct matches in chatbot-data first
   for (const [key, keywords] of Object.entries(global.keywordMappings)) {
     if (keywords.some(keyword => lowercaseMessage.includes(keyword))) {
-      return global.chatbotData[key]?.message;
+      const response = global.chatbotData[key]?.message;
+      if (response) {
+        console.log(`📝 Matched keyword category: ${key}`);
+        return response;
+      }
     }
   }
   
   return null;
 }
 
+// Helper: Get fallback response when API fails
 function getFallbackResponse(message) {
   const chatbotData = global.chatbotData;
   const lowercaseMessage = message.toLowerCase();
   
+  // Try to find best matching category
+  let bestMatch = 'unknown';
+  let maxMatches = 0;
+  
   for (const [key, keywords] of Object.entries(global.keywordMappings)) {
-    if (keywords.some(keyword => lowercaseMessage.includes(keyword))) {
-      return chatbotData[key]?.message || chatbotData.unknown.message;
+    const matches = keywords.filter(keyword => 
+      lowercaseMessage.includes(keyword)
+    ).length;
+    
+    if (matches > maxMatches) {
+      maxMatches = matches;
+      bestMatch = key;
     }
   }
   
-  return chatbotData.unknown.message;
+  const response = chatbotData[bestMatch]?.message || chatbotData.unknown.message;
+  console.log(`🔄 Using fallback category: ${bestMatch}`);
+  return response;
 }
 
+// Helper: Check if response contains speculative/generated content
 function containsGeneratedInfo(response) {
-    const generatedPatterns = [
-        'I believe',
-        'probably',
-        'might be',
-        'could be',
-        'possibly',
-        'I think',
-        'perhaps',
-        'maybe',
-        'seems to',
-        'appears to',
-        'likely',
-        'would',
-        'should',
-        'potential',
-        'may have',
-        'around',
-        'approximately'
-    ];
-    
-    const responseLower = response.toLowerCase();
-    return generatedPatterns.some(pattern => 
-        responseLower.includes(pattern.toLowerCase())
-    ) || response.includes('...');
+  const generatedPatterns = [
+    'I believe',
+    'probably',
+    'might be',
+    'could be',
+    'possibly',
+    'I think',
+    'perhaps',
+    'maybe',
+    'seems to',
+    'appears to',
+    'likely',
+    'would have',
+    'should have',
+    'potential',
+    'may have',
+    'approximately'
+  ];
+  
+  const responseLower = response.toLowerCase();
+  return generatedPatterns.some(pattern => 
+    responseLower.includes(pattern.toLowerCase())
+  );
 }

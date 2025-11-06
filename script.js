@@ -29,14 +29,12 @@ userInput.addEventListener('keypress', function(e) {
 });
 
 async function handleUserInput(message) {
-    // Allow both manual input and programmatic messages
     const userMessage = typeof message === 'string' ? message : userInput.value.trim();
     if (userMessage.length === 0 || isProcessing) return;
 
     displayUserMessage(userMessage);
     addToHistory('user', userMessage);
     
-    // Only clear input if it was a manual entry
     if (typeof message !== 'string') {
         userInput.value = '';
     }
@@ -55,18 +53,26 @@ async function handleUserInput(message) {
         hideTypingIndicator();
         console.error('Error:', error);
 
-        const errorMessage = `I apologize, but I'm having trouble connecting right now. 😔
+        // Try local fallback first
+        let fallbackMessage;
+        try {
+            fallbackMessage = getFallbackResponse(userMessage);
+        } catch (fallbackError) {
+            // Ultimate fallback if even local matching fails
+            fallbackMessage = `I apologize, but I'm having trouble connecting right now. 😔
 
-Here's Cole's contact information in the meantime:
+Here's Cole's contact information:
 📧 Email: colelenting7@gmail.com
 📱 Phone: 081 348 9356
+📍 Location: Cape Town, SA
 
-Quick actions:
-• Try asking again
-• Download CV (/assets/coleLenting-CV.pdf)
-• Visit portfolio ( https://colelenting.vercel.app/ )`;
+Quick links:
+• Portfolio: https://colelenting.vercel.app/
+• GitHub: https://github.com/coleLenting
+• Download CV: /assets/coleLenting-CV.pdf`;
+        }
 
-        displayBotMessage(errorMessage);
+        displayBotMessage(fallbackMessage);
     } finally {
         isProcessing = false;
         sendButton.disabled = false;
@@ -75,12 +81,13 @@ Quick actions:
 
 async function callGeminiAPI(message) {
     try {
-        // Check if we have access to the chatbot data first
+        // Verify chatbot data is loaded
         if (!window.chatbotData || !window.keywordMappings) {
             console.error('Chatbot data not loaded');
-            return "I apologize, but I'm having trouble accessing my knowledge base. Please try again in a moment.";
+            throw new Error('Data not loaded');
         }
 
+        // Call the API endpoint
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
@@ -89,34 +96,39 @@ async function callGeminiAPI(message) {
             body: JSON.stringify({
                 message: message,
                 conversationHistory: conversationHistory.slice(-20)
-            })
+            }),
+            // Add timeout
+            signal: AbortSignal.timeout(15000) // 15 second timeout
         });
 
+        // Check if response is ok
         if (!response.ok) {
-            console.error('API Response Error:', response.status);
-            // Use fallback from chatbot-data
-            const fallbackKey = getFallbackKey(message);
-            return window.chatbotData[fallbackKey]?.message || 
-                   window.chatbotData.unknown.message;
+            console.warn(`API returned status ${response.status}, using fallback`);
+            return getFallbackResponse(message);
         }
 
         const data = await response.json();
-        return data.response;
-    } catch (error) {
-        console.error('Fetch Error:', error);
-        // Safely handle fallback even if data structure is incomplete
-        try {
-            const fallbackKey = getFallbackKey(message);
-            return window.chatbotData[fallbackKey]?.message || 
-                   window.chatbotData.unknown.message;
-        } catch (fallbackError) {
-            console.error('Fallback Error:', fallbackError);
-            return "I apologize, but I'm having trouble responding right now. Please try again in a moment.";
+        
+        // Validate response structure
+        if (!data || !data.response) {
+            console.warn('Invalid API response structure, using fallback');
+            return getFallbackResponse(message);
         }
+
+        // Log the source for debugging
+        console.log(`Response source: ${data.source}`);
+        
+        return data.response;
+
+    } catch (error) {
+        console.error('API call failed:', error.message);
+        
+        // Always return fallback on error
+        return getFallbackResponse(message);
     }
 }
 
-function getFallbackKey(message) {
+function getFallbackResponse(message) {
     try {
         const lowercaseMessage = message.toLowerCase();
         let bestMatch = 'unknown';
@@ -136,10 +148,16 @@ function getFallbackKey(message) {
             }
         }
 
-        return bestMatch;
+        const response = window.chatbotData[bestMatch]?.message || 
+                        window.chatbotData.unknown?.message ||
+                        "I'm here to help you learn about Cole! Ask me about his skills, experience, or projects.";
+        
+        console.log(`Using fallback category: ${bestMatch}`);
+        return response;
+
     } catch (error) {
-        console.error('Error in getFallbackKey:', error);
-        return 'unknown';
+        console.error('Error in getFallbackResponse:', error);
+        return "I'm here to help you learn about Cole! Ask me about his skills, experience, or projects.";
     }
 }
 
@@ -282,7 +300,6 @@ function makeLinksClickable(element) {
 }
 
 function showTypingIndicator() {
-    // Remove existing typing indicator if any
     const existingIndicator = document.querySelector('.typing-indicator');
     if (existingIndicator) {
         existingIndicator.remove();
