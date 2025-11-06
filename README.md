@@ -1,4 +1,5 @@
 # Cole Lenting - AI-Powered Portfolio Chatbot
+### `AI Powered still in progress`
 
 An intelligent chatbot assistant powered by Google's Gemini API that helps visitors learn about Cole Lenting's portfolio, skills, experience, and projects.
 
@@ -6,7 +7,7 @@ An intelligent chatbot assistant powered by Google's Gemini API that helps visit
 
 ## Features
 
-- **AI-Powered Conversations**: Natural, intelligent responses using Google Gemini API
+- **AI-Powered Conversations**: Natural, intelligent responses using Google Gemini API ` in progress `
 - **Comprehensive Knowledge Base**: Complete information about Cole's background, education, skills, and experience
 - **Time-Aware Responses**: Dynamic availability status based on SAST business hours (8 AM - 5 PM)
 - **Conversation Memory**: Maintains context of the last 20 messages for coherent conversations
@@ -118,12 +119,9 @@ Response:
 - API key stored securely in environment variables
 - Never exposed in client-side code
 - Serverless function acts as secure proxy
-- CORS enabled for cross-origin requests
 
 ## Contact
 
-- **Email**: colelenting7@gmail.com
-- **Phone**: 081 348 9356
 - **Location**: Cape Town, South Africa
 - **GitHub**: https://github.com/coleLenting
 - **Portfolio**: https://www.colelenting.com/
@@ -131,4 +129,4 @@ Response:
 
 ## License
 
-© 2024 Cole Lenting. All rights reserved.
+© 2025 Cole Lenting. All rights reserved.
