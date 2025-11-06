@@ -99,7 +99,7 @@ Download: /assets/coleLenting-CV.pdf
         message: "📋 **Cole's Professional Resume**\n\nLooking for Cole's resume? You're in the right place! His comprehensive CV includes all his professional experience, education, and technical skills.",
         customHTML: `
             <div class="resume-redirect">
-                <p>🔄 <em>Redirecting you to download options...</em></p>
+                <p>📄 <em>Redirecting you to download options...</em></p>
             </div>
         `,
         options: [
@@ -201,7 +201,11 @@ const keywordMappings = {
     resume: ["resume", "cv", "curriculum", "vitae", "download", "get", "show", "view", "professional", "document"]
 };
 
-window.chatbotData = chatbotData;
-window.keywordMappings = keywordMappings;
+// Export for Node.js (server-side)
+export { chatbotData, keywordMappings };
 
-
+// Also make available for browser (client-side)
+if (typeof window !== 'undefined') {
+    window.chatbotData = chatbotData;
+    window.keywordMappings = keywordMappings;
+}
