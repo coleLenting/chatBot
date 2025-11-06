@@ -1,5 +1,9 @@
 import { chatbotData, keywordMappings } from '../chatbot-data.js';
 
+// Make data available globally for fallbacks
+global.chatbotData = chatbotData;
+global.keywordMappings = keywordMappings;
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -201,7 +205,7 @@ CRITICAL RULES:
     // Catch any general errors
     console.error('❌ Handler Error:', error.message);
     return res.status(200).json({
-      response: getFallbackResponse(message),
+      response: getFallbackResponse(req.body?.message || ''),
       source: 'error_fallback',
       timestamp: new Date().toISOString()
     });
@@ -213,9 +217,9 @@ function getStaticResponse(message) {
   const lowercaseMessage = message.toLowerCase();
   
   // Check direct matches in chatbot-data first
-  for (const [key, keywords] of Object.entries(keywordMappings)) {
+  for (const [key, keywords] of Object.entries(global.keywordMappings)) {
     if (keywords.some(keyword => lowercaseMessage.includes(keyword))) {
-      const response = chatbotData[key]?.message;
+      const response = global.chatbotData[key]?.message;
       if (response) {
         console.log(`📝 Matched keyword category: ${key}`);
         return response;
@@ -228,13 +232,14 @@ function getStaticResponse(message) {
 
 // Helper: Get fallback response when API fails
 function getFallbackResponse(message) {
+  const chatbotData = global.chatbotData;
   const lowercaseMessage = message.toLowerCase();
   
   // Try to find best matching category
   let bestMatch = 'unknown';
   let maxMatches = 0;
   
-  for (const [key, keywords] of Object.entries(keywordMappings)) {
+  for (const [key, keywords] of Object.entries(global.keywordMappings)) {
     const matches = keywords.filter(keyword => 
       lowercaseMessage.includes(keyword)
     ).length;
