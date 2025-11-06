@@ -28,18 +28,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    // First try to match with static data
-    const staticResponse = getStaticResponse(message);
-    if (staticResponse) {
-      console.log('✅ Using static response from chatbot-data.js');
-      return res.status(200).json({
-        response: staticResponse,
-        source: 'static',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // If no static match, proceed with API
+    // Try API first, fallback to static only on errors
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     
     if (!GEMINI_API_KEY) {
@@ -150,10 +139,27 @@ RESPONSE FORMAT:
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
-      console.error('❌ Gemini API error:', geminiResponse.status, errorText);
-      return res.status(500).json({ 
-        error: 'AI service error',
-        details: errorText 
+      const statusCode = geminiResponse.status;
+
+      console.error(`❌ Gemini API error: ${statusCode}`, errorText);
+
+      // Determine error type
+      let errorType = 'api_error';
+      if (statusCode === 429) {
+        console.log('⚠️ Rate limit exceeded, using fallback');
+        errorType = 'rate_limit_fallback';
+      } else if (statusCode >= 500) {
+        console.log('⚠️ Server error, using fallback');
+        errorType = 'server_error_fallback';
+      } else {
+        console.log('⚠️ API failed, using fallback response');
+        errorType = 'api_error_fallback';
+      }
+
+      return res.status(200).json({
+        response: getFallbackResponse(message),
+        source: errorType,
+        timestamp: new Date().toISOString()
       });
     }
 
@@ -163,7 +169,14 @@ RESPONSE FORMAT:
     // Validate response
     if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
       console.error('❌ Invalid Gemini response structure:', data);
-      return res.status(500).json({ error: 'Invalid AI response' });
+
+      // Fallback to static data on invalid response
+      console.log('⚠️ Invalid API response, using fallback');
+      return res.status(200).json({
+        response: getFallbackResponse(message),
+        source: 'invalid_response_fallback',
+        timestamp: new Date().toISOString()
+      });
     }
 
     // Add source verification to response
@@ -179,36 +192,27 @@ RESPONSE FORMAT:
       });
     }
 
+    console.log('✅ Returning AI-generated response');
     return res.status(200).json({
       response: aiResponse,
-      source: 'api',
+      source: 'gemini_api',
       timestamp: new Date().toISOString()
     });
 
   } catch (error) {
     console.error('❌ Error:', error.message);
+
+    // Fallback to static data on any error (timeout, network, etc.)
+    console.log('⚠️ Error occurred, using fallback response');
     return res.status(200).json({
-      response: getFallbackResponse(message),
+      response: getFallbackResponse(req.body?.message || ''),
       source: 'error_fallback',
       timestamp: new Date().toISOString()
     });
   }
 }
 
-// Add these helper functions
-function getStaticResponse(message) {
-  const lowercaseMessage = message.toLowerCase();
-  
-  // Check direct matches in chatbot-data first
-  for (const [key, keywords] of Object.entries(global.keywordMappings)) {
-    if (keywords.some(keyword => lowercaseMessage.includes(keyword))) {
-      return global.chatbotData[key]?.message;
-    }
-  }
-  
-  return null;
-}
-
+// Helper function for fallback responses
 function getFallbackResponse(message) {
   const chatbotData = global.chatbotData;
   const lowercaseMessage = message.toLowerCase();
