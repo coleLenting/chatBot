@@ -30,12 +30,17 @@ export default async function handler(req, res) {
 
     // Try API first, fallback to static only on errors
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    
+
+    console.log('🔍 Checking API key...');
+    console.log('API Key exists:', !!GEMINI_API_KEY);
+    console.log('API Key length:', GEMINI_API_KEY?.length || 0);
+
     if (!GEMINI_API_KEY) {
       console.log('❌ No API key, falling back to static data');
+      console.log('Available env vars:', Object.keys(process.env).filter(k => k.includes('API') || k.includes('GEMINI')));
       return res.status(200).json({
         response: getFallbackResponse(message),
-        source: 'fallback',
+        source: 'no_api_key_fallback',
         timestamp: new Date().toISOString()
       });
     }
@@ -109,10 +114,15 @@ RESPONSE FORMAT:
     });
 
     console.log('🤖 Calling Gemini API...');
+    console.log('Message:', message);
+    console.log('Conversation history length:', conversationHistory.length);
 
     // Call Gemini API with timeout
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    console.log('API URL base:', apiUrl.substring(0, 80) + '...');
 
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -200,7 +210,13 @@ RESPONSE FORMAT:
     });
 
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('❌ Error caught:', error.message);
+    console.error('Error name:', error.name);
+
+    // Check if it's a timeout
+    if (error.name === 'AbortError') {
+      console.log('⚠️ API timeout (8s limit reached)');
+    }
 
     // Fallback to static data on any error (timeout, network, etc.)
     console.log('⚠️ Error occurred, using fallback response');

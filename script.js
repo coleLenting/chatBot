@@ -101,6 +101,7 @@ async function callGeminiAPI(message) {
         }
 
         const data = await response.json();
+        console.log('📊 API Response source:', data.source);
         return data.response;
     } catch (error) {
         console.error('Fetch Error:', error);
